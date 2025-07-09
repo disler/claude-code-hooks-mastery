@@ -6,7 +6,10 @@
 import json
 import sys
 import re
+import shlex  # Required for safe command parsing in is_indirect_rm()
 from pathlib import Path
+
+RM_ANY = re.compile(r"\brm\b", re.I)
 
 def is_dangerous_rm_command(command):
     """
@@ -50,6 +53,32 @@ def is_dangerous_rm_command(command):
                 return True
     
     return False
+
+def script_contains_rm(path):
+    """
+    Check if a script file contains any rm command.
+    """
+    try:
+        return bool(RM_ANY.search(path.read_text()))
+    except Exception:
+        return False
+
+
+def is_indirect_rm(command):
+    """
+    Detect rm commands executed indirectly through bash -c, sh -c, or script files.
+    """
+    args = shlex.split(command, posix=True)
+    if not args:
+        return False
+    if args[0] in ['bash', 'sh'] and len(args) >= 3 and args[1] == '-c':
+        return bool(RM_ANY.search(" ".join(args[2:])))
+    target = Path(args[0])
+    if target.exists() and target.is_file():
+        if target.suffix in ['.sh', ''] and target.stat().st_size <= 1048576:
+            return script_contains_rm(target)
+    return False
+
 
 def is_env_file_access(tool_name, tool_input):
     """
@@ -100,7 +129,7 @@ def main():
             command = tool_input.get('command', '')
             
             # Block rm -rf commands with comprehensive pattern matching
-            if is_dangerous_rm_command(command):
+            if is_dangerous_rm_command(command) or is_indirect_rm(command):
                 print("BLOCKED: Dangerous rm command detected and prevented", file=sys.stderr)
                 sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
         
