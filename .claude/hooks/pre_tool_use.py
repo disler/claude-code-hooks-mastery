@@ -11,48 +11,50 @@ from pathlib import Path
 
 RM_ANY = re.compile(r"\brm\b", re.I)
 
+
 def is_dangerous_rm_command(command):
     """
     Comprehensive detection of dangerous rm commands.
     Matches various forms of rm -rf and similar destructive patterns.
     """
     # Normalize command by removing extra spaces and converting to lowercase
-    normalized = ' '.join(command.lower().split())
-    
+    normalized = " ".join(command.lower().split())
+
     # Pattern 1: Standard rm -rf variations
     patterns = [
-        r'\brm\s+.*-[a-z]*r[a-z]*f',  # rm -rf, rm -fr, rm -Rf, etc.
-        r'\brm\s+.*-[a-z]*f[a-z]*r',  # rm -fr variations
-        r'\brm\s+--recursive\s+--force',  # rm --recursive --force
-        r'\brm\s+--force\s+--recursive',  # rm --force --recursive
-        r'\brm\s+-r\s+.*-f',  # rm -r ... -f
-        r'\brm\s+-f\s+.*-r',  # rm -f ... -r
+        r"\brm\s+.*-[a-z]*r[a-z]*f",  # rm -rf, rm -fr, rm -Rf, etc.
+        r"\brm\s+.*-[a-z]*f[a-z]*r",  # rm -fr variations
+        r"\brm\s+--recursive\s+--force",  # rm --recursive --force
+        r"\brm\s+--force\s+--recursive",  # rm --force --recursive
+        r"\brm\s+-r\s+.*-f",  # rm -r ... -f
+        r"\brm\s+-f\s+.*-r",  # rm -f ... -r
     ]
-    
+
     # Check for dangerous patterns
     for pattern in patterns:
         if re.search(pattern, normalized):
             return True
-    
+
     # Pattern 2: Check for rm with recursive flag targeting dangerous paths
     dangerous_paths = [
-        r'/',           # Root directory
-        r'/\*',         # Root with wildcard
-        r'~',           # Home directory
-        r'~/',          # Home directory path
-        r'\$HOME',      # Home environment variable
-        r'\.\.',        # Parent directory references
-        r'\*',          # Wildcards in general rm -rf context
-        r'\.',          # Current directory
-        r'\.\s*$',      # Current directory at end of command
+        r"/",  # Root directory
+        r"/\*",  # Root with wildcard
+        r"~",  # Home directory
+        r"~/",  # Home directory path
+        r"\$HOME",  # Home environment variable
+        r"\.\.",  # Parent directory references
+        r"\*",  # Wildcards in general rm -rf context
+        r"\.",  # Current directory
+        r"\.\s*$",  # Current directory at end of command
     ]
-    
-    if re.search(r'\brm\s+.*-[a-z]*r', normalized):  # If rm has recursive flag
+
+    if re.search(r"\brm\s+.*-[a-z]*r", normalized):  # If rm has recursive flag
         for path in dangerous_paths:
             if re.search(path, normalized):
                 return True
-    
+
     return False
+
 
 def script_contains_rm(path):
     """
@@ -71,92 +73,128 @@ def is_indirect_rm(command):
     args = shlex.split(command, posix=True)
     if not args:
         return False
-    if args[0] in ['bash', 'sh'] and len(args) >= 3 and args[1] == '-c':
+    if args[0] in ["bash", "sh"] and len(args) >= 3 and args[1] == "-c":
         return bool(RM_ANY.search(" ".join(args[2:])))
     target = Path(args[0])
     if target.exists() and target.is_file():
-        if target.suffix in ['.sh', ''] and target.stat().st_size <= 1048576:
+        if target.suffix in [".sh", ""] and target.stat().st_size <= 1048576:
             return script_contains_rm(target)
     return False
+
+
+def is_file_deletion_attempt(command):
+    """
+    Detect various file deletion methods beyond just rm.
+    Includes unlink, find -delete, programming language deletions, and file truncation.
+    """
+    patterns = [
+        r"\bunlink\b",  # unlink command
+        r"\bfind\b.*-delete",  # find with -delete
+        r">\s*[^&|<>]+$",  # file truncation
+        r":\s*>\s*[^&|<>]+$",  # : > file truncation
+        r"perl.*unlink",  # perl unlink
+        r"python.*(?:unlink|remove)",  # python deletion
+        r"ruby.*(?:unlink|delete)",  # ruby deletion
+        r"truncate.*-s\s*0",  # truncate to 0 bytes
+        r"\bdd\b.*\bif=/dev/null\b",  # dd from /dev/null
+        r"\bcp\s+/dev/null\s+",  # cp /dev/null to file
+        r"sed\s+.*-i.*'d'",  # sed -i delete all lines
+        r'sed\s+.*-i.*"d"',  # sed -i delete all lines (double quotes)
+    ]
+    return any(re.search(p, command, re.I) for p in patterns)
 
 
 def is_env_file_access(tool_name, tool_input):
     """
     Check if any tool is trying to access .env files containing sensitive data.
     """
-    if tool_name in ['Read', 'Edit', 'MultiEdit', 'Write', 'Bash']:
+    if tool_name in ["Read", "Edit", "MultiEdit", "Write", "Bash"]:
         # Check file paths for file-based tools
-        if tool_name in ['Read', 'Edit', 'MultiEdit', 'Write']:
-            file_path = tool_input.get('file_path', '')
-            if '.env' in file_path and not file_path.endswith('.env.sample'):
+        if tool_name in ["Read", "Edit", "MultiEdit", "Write"]:
+            file_path = tool_input.get("file_path", "")
+            if ".env" in file_path and not file_path.endswith(".env.sample"):
                 return True
-        
+
         # Check bash commands for .env file access
-        elif tool_name == 'Bash':
-            command = tool_input.get('command', '')
+        elif tool_name == "Bash":
+            command = tool_input.get("command", "")
             # Pattern to detect .env file access (but allow .env.sample)
             env_patterns = [
-                r'\b\.env\b(?!\.sample)',  # .env but not .env.sample
-                r'cat\s+.*\.env\b(?!\.sample)',  # cat .env
-                r'echo\s+.*>\s*\.env\b(?!\.sample)',  # echo > .env
-                r'touch\s+.*\.env\b(?!\.sample)',  # touch .env
-                r'cp\s+.*\.env\b(?!\.sample)',  # cp .env
-                r'mv\s+.*\.env\b(?!\.sample)',  # mv .env
+                r"\b\.env\b(?!\.sample)",  # .env but not .env.sample
+                r"cat\s+.*\.env\b(?!\.sample)",  # cat .env
+                r"echo\s+.*>\s*\.env\b(?!\.sample)",  # echo > .env
+                r"touch\s+.*\.env\b(?!\.sample)",  # touch .env
+                r"cp\s+.*\.env\b(?!\.sample)",  # cp .env
+                r"mv\s+.*\.env\b(?!\.sample)",  # mv .env
             ]
-            
+
             for pattern in env_patterns:
                 if re.search(pattern, command):
                     return True
-    
+
     return False
+
 
 def main():
     try:
         # Read JSON input from stdin
         input_data = json.load(sys.stdin)
-        
-        tool_name = input_data.get('tool_name', '')
-        tool_input = input_data.get('tool_input', {})
-        
+
+        tool_name = input_data.get("tool_name", "")
+        tool_input = input_data.get("tool_input", {})
+
         # Check for .env file access (blocks access to sensitive environment files)
         if is_env_file_access(tool_name, tool_input):
-            print("BLOCKED: Access to .env files containing sensitive data is prohibited", file=sys.stderr)
-            print("Use .env.sample for template files instead", file=sys.stderr)
+            print(
+                "Safety check: Environment file operations are restricted to protect sensitive data",
+                file=sys.stderr,
+            )
             sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
-        
+
         # Check for dangerous rm -rf commands
-        if tool_name == 'Bash':
-            command = tool_input.get('command', '')
-            
+        if tool_name == "Bash":
+            command = tool_input.get("command", "")
+
             # Block rm -rf commands with comprehensive pattern matching
             if is_dangerous_rm_command(command) or is_indirect_rm(command):
-                print("BLOCKED: Dangerous rm command detected and prevented", file=sys.stderr)
+                print(
+                    "Safety check: File deletion commands are restricted to prevent accidental data loss",
+                    file=sys.stderr,
+                )
                 sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
-        
+
+            # Block other file deletion methods
+            if is_file_deletion_attempt(command):
+                print(
+                    "Safety check: File deletion commands are restricted to prevent accidental data loss",
+                    file=sys.stderr,
+                )
+                sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
+
         # Ensure log directory exists
-        log_dir = Path.cwd() / 'logs'
+        log_dir = Path.cwd() / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / 'pre_tool_use.json'
-        
+        log_path = log_dir / "pre_tool_use.json"
+
         # Read existing log data or initialize empty list
         if log_path.exists():
-            with open(log_path, 'r') as f:
+            with open(log_path, "r") as f:
                 try:
                     log_data = json.load(f)
                 except (json.JSONDecodeError, ValueError):
                     log_data = []
         else:
             log_data = []
-        
+
         # Append new data
         log_data.append(input_data)
-        
+
         # Write back to file with formatting
-        with open(log_path, 'w') as f:
+        with open(log_path, "w") as f:
             json.dump(log_data, f, indent=2)
-        
+
         sys.exit(0)
-        
+
     except json.JSONDecodeError:
         # Gracefully handle JSON decode errors
         sys.exit(0)
@@ -164,5 +202,6 @@ def main():
         # Handle any other errors gracefully
         sys.exit(0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
