@@ -29,6 +29,7 @@ def get_git_status():
         # Get current branch
         branch_result = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=os.getenv('CLAUDE_PROJECT_DIR')
             capture_output=True,
             text=True,
             timeout=5
@@ -38,6 +39,7 @@ def get_git_status():
         # Get uncommitted changes count
         status_result = subprocess.run(
             ['git', 'status', '--porcelain'],
+            cwd=os.getenv('CLAUDE_PROJECT_DIR')
             capture_output=True,
             text=True,
             timeout=5
@@ -64,6 +66,7 @@ def get_recent_issues():
         # Get recent open issues
         result = subprocess.run(
             ['gh', 'issue', 'list', '--limit', '5', '--state', 'open'],
+            cwd=os.getenv('CLAUDE_PROJECT_DIR')
             capture_output=True,
             text=True,
             timeout=10
@@ -97,11 +100,12 @@ def load_development_context(source):
         "TODO.md",
         ".github/ISSUE_TEMPLATE.md"
     ]
+    project_dir = Path(os.getenv("CLAUDE_PROJECT_DIR", ""))
     
     for file_path in context_files:
-        if Path(file_path).exists():
+        if (project_dir / file_path).exists():
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path, 'rt') as f:
                     content = f.read().strip()
                     if content:
                         context_parts.append(f"\n--- Content from {file_path} ---")
