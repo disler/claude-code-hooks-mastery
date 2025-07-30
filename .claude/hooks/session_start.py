@@ -29,7 +29,7 @@ def get_git_status():
         # Get current branch
         branch_result = subprocess.run(
             ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-            cwd=os.getenv('CLAUDE_PROJECT_DIR')
+            cwd=os.getenv('CLAUDE_PROJECT_DIR'),
             capture_output=True,
             text=True,
             timeout=5
@@ -39,7 +39,7 @@ def get_git_status():
         # Get uncommitted changes count
         status_result = subprocess.run(
             ['git', 'status', '--porcelain'],
-            cwd=os.getenv('CLAUDE_PROJECT_DIR')
+            cwd=os.getenv('CLAUDE_PROJECT_DIR'),
             capture_output=True,
             text=True,
             timeout=5
@@ -66,7 +66,7 @@ def get_recent_issues():
         # Get recent open issues
         result = subprocess.run(
             ['gh', 'issue', 'list', '--limit', '5', '--state', 'open'],
-            cwd=os.getenv('CLAUDE_PROJECT_DIR')
+            cwd=os.getenv('CLAUDE_PROJECT_DIR'),
             capture_output=True,
             text=True,
             timeout=10
@@ -162,7 +162,7 @@ def main():
                 # Try to use TTS to announce session start
                 script_dir = Path(__file__).parent
                 tts_script = script_dir / "utils" / "tts" / "pyttsx3_tts.py"
-                
+
                 if tts_script.exists():
                     messages = {
                         "startup": "Claude Code session started",
@@ -170,7 +170,7 @@ def main():
                         "clear": "Starting fresh session"
                     }
                     message = messages.get(source, "Session started")
-                    
+
                     subprocess.run(
                         ["uv", "run", str(tts_script), message],
                         capture_output=True,
@@ -178,7 +178,7 @@ def main():
                     )
             except Exception:
                 pass
-        
+
         # Success
         sys.exit(0)
         
