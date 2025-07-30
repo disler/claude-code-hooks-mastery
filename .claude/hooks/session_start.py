@@ -162,7 +162,7 @@ def main():
                 # Try to use TTS to announce session start
                 script_dir = Path(__file__).parent
                 tts_script = script_dir / "utils" / "tts" / "pyttsx3_tts.py"
-
+                
                 if tts_script.exists():
                     messages = {
                         "startup": "Claude Code session started",
@@ -170,7 +170,7 @@ def main():
                         "clear": "Starting fresh session"
                     }
                     message = messages.get(source, "Session started")
-
+                    
                     subprocess.run(
                         ["uv", "run", str(tts_script), message],
                         capture_output=True,
@@ -178,7 +178,7 @@ def main():
                     )
             except Exception:
                 pass
-
+        
         # Success
         sys.exit(0)
         
