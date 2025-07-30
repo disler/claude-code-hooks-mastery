@@ -21,7 +21,7 @@ try:
 except ImportError:
     pass  # dotenv is optional
 
-from _log_common import append_log_data, get_log_data
+from _log_common import append_log_data, get_log_path
 
 def get_completion_messages():
     """Return list of friendly completion messages."""
