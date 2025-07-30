@@ -19,30 +19,7 @@ try:
 except ImportError:
     pass  # dotenv is optional
 
-
-def log_pre_compact(input_data):
-    """Log pre-compact event to logs directory."""
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / 'pre_compact.json'
-    
-    # Read existing log data or initialize empty list
-    if log_file.exists():
-        with open(log_file, 'r') as f:
-            try:
-                log_data = json.load(f)
-            except (json.JSONDecodeError, ValueError):
-                log_data = []
-    else:
-        log_data = []
-    
-    # Append the entire input data
-    log_data.append(input_data)
-    
-    # Write back to file with formatting
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+from _log_common import append_log_data, get_log_path
 
 
 def backup_transcript(transcript_path, trigger):
@@ -52,7 +29,7 @@ def backup_transcript(transcript_path, trigger):
             return
         
         # Create backup directory
-        backup_dir = Path("logs") / "transcript_backups"
+        backup_dir = get_log_path() / "transcript_backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate backup filename with timestamp and trigger type
@@ -90,7 +67,7 @@ def main():
         custom_instructions = input_data.get('custom_instructions', '')
         
         # Log the pre-compact event
-        log_pre_compact(input_data)
+        append_log_data("pre_compact.json", input_data)
         
         # Create backup if requested
         backup_path = None
