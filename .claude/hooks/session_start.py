@@ -103,9 +103,10 @@ def load_development_context(source):
     project_dir = Path(os.getenv("CLAUDE_PROJECT_DIR", ""))
     
     for file_path in context_files:
-        if (project_dir / file_path).exists():
+        full_path = project_dir / file_path
+        if full_path.exists():
             try:
-                with open(file_path, 'rt') as f:
+                with open(full_path, 'rt') as f:
                     content = f.read().strip()
                     if content:
                         context_parts.append(f"\n--- Content from {file_path} ---")
