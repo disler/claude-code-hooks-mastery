@@ -21,6 +21,7 @@ try:
 except ImportError:
     pass  # dotenv is optional
 
+from _log_common import append_log_data, get_log_path
 
 def get_completion_messages():
     """Return list of friendly completion messages."""
@@ -152,27 +153,8 @@ def main():
         session_id = input_data.get("session_id", "")
         stop_hook_active = input_data.get("stop_hook_active", False)
 
-        # Ensure log directory exists
-        log_dir = os.path.join(os.getcwd(), "logs")
-        os.makedirs(log_dir, exist_ok=True)
-        log_path = os.path.join(log_dir, "stop.json")
-
-        # Read existing log data or initialize empty list
-        if os.path.exists(log_path):
-            with open(log_path, 'r') as f:
-                try:
-                    log_data = json.load(f)
-                except (json.JSONDecodeError, ValueError):
-                    log_data = []
-        else:
-            log_data = []
-        
         # Append new data
-        log_data.append(input_data)
-        
-        # Write back to file with formatting
-        with open(log_path, 'w') as f:
-            json.dump(log_data, f, indent=2)
+        append_log_data("stop.json", input_data)
         
         # Handle --chat switch
         if args.chat and 'transcript_path' in input_data:
@@ -181,7 +163,7 @@ def main():
                 # Read .jsonl file and convert to JSON array
                 chat_data = []
                 try:
-                    with open(transcript_path, 'r') as f:
+                    with open(transcript_path, 'rt') as f:
                         for line in f:
                             line = line.strip()
                             if line:
@@ -191,8 +173,8 @@ def main():
                                     pass  # Skip invalid lines
                     
                     # Write to logs/chat.json
-                    chat_file = os.path.join(log_dir, 'chat.json')
-                    with open(chat_file, 'w') as f:
+                    chat_file = get_log_path() / 'chat.json'
+                    with open(chat_file, 'wt') as f:
                         json.dump(chat_data, f, indent=2)
                 except Exception:
                     pass  # Fail silently

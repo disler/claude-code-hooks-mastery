@@ -19,30 +19,7 @@ try:
 except ImportError:
     pass  # dotenv is optional
 
-
-def log_user_prompt(session_id, input_data):
-    """Log user prompt to logs directory."""
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / 'user_prompt_submit.json'
-    
-    # Read existing log data or initialize empty list
-    if log_file.exists():
-        with open(log_file, 'r') as f:
-            try:
-                log_data = json.load(f)
-            except (json.JSONDecodeError, ValueError):
-                log_data = []
-    else:
-        log_data = []
-    
-    # Append the entire input data
-    log_data.append(input_data)
-    
-    # Write back to file with formatting
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+from _log_common import append_log_data
 
 
 def validate_prompt(prompt):
@@ -83,7 +60,7 @@ def main():
         prompt = input_data.get('prompt', '')
         
         # Log the user prompt
-        log_user_prompt(session_id, input_data)
+        append_log_data('user_prompt_submit.json', input_data)
         
         # Validate prompt if requested and not in log-only mode
         if args.validate and not args.log_only:
