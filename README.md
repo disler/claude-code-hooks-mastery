@@ -31,6 +31,10 @@ ollama serve
 
 The stop hook will use Ollama as fallback after OpenAI/Anthropic for generating completion messages.
 
+## Utility Scripts
+
+The `scripts/` directory contains 7 ready-to-use utility scripts for logging, monitoring, and automation. See [scripts/README.md](scripts/README.md) for detailed documentation.
+
 ## Hook Lifecycle & Payloads
 
 This demo captures all 8 Claude Code hook lifecycle events with their JSON payloads:
