@@ -7,11 +7,16 @@
 # ///
 
 import json
-import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+try:
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 try:
     from dotenv import load_dotenv
 
