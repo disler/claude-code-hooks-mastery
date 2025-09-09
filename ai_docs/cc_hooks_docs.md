@@ -131,7 +131,7 @@ ls - Lists files and directories
 ## More Examples
 
 <Note>
-  For a complete example implementation, see the [bash command validator example](https://github.com/anthropics/claude-code/blob/main/examples/hooks/bash_command_validator_example.py) in our public codebase.
+  For a complete example implementation, see the bash command validator example in our public codebase.
 </Note>
 
 ### Code Formatting Hook
@@ -169,7 +169,7 @@ Automatically fix missing language tags and formatting issues in markdown files:
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/markdown_formatter.py"
+            "command": "npx ts-node $CLAUDE_PROJECT_DIR/.claude/hooks/markdown_formatter.ts"
           }
         ]
       }
@@ -178,98 +178,110 @@ Automatically fix missing language tags and formatting issues in markdown files:
 }
 ```
 
-Create `.claude/hooks/markdown_formatter.py` with this content:
+Create `.claude/hooks/markdown_formatter.ts` with this content:
 
-````python
-#!/usr/bin/env python3
-"""
-Markdown formatter for Claude Code output.
-Fixes missing language tags and spacing issues while preserving code content.
-"""
-import json
-import sys
-import re
-import os
+````typescript
+#!/usr/bin/env npx ts-node
 
-def detect_language(code):
-    """Best-effort language detection from code content."""
-    s = code.strip()
+/**
+ * Markdown formatter for Claude Code output.
+ * Fixes missing language tags and spacing issues while preserving code content.
+ */
+import * as fs from 'fs';
+
+function detectLanguage(code: string): string {
+    const s = code.trim();
     
-    # JSON detection
-    if re.search(r'^\s*[{\[]', s):
-        try:
-            json.loads(s)
-            return 'json'
-        except:
-            pass
+    // JSON detection
+    if (/^\s*[{\[]/.test(s)) {
+        try {
+            JSON.parse(s);
+            return 'json';
+        } catch {
+            // Continue to other detections
+        }
+    }
     
-    # Python detection
-    if re.search(r'^\s*def\s+\w+\s*\(', s, re.M) or \
-       re.search(r'^\s*(import|from)\s+\w+', s, re.M):
-        return 'python'
+    // TypeScript detection
+    if (/^\s*(interface|type|enum)\s+\w+/.test(s) ||
+        /:\s*(string|number|boolean|any)\b/.test(s) ||
+        /<.*>/.test(s) && /\bfunction\b/.test(s)) {
+        return 'typescript';
+    }
     
-    # JavaScript detection  
-    if re.search(r'\b(function\s+\w+\s*\(|const\s+\w+\s*=)', s) or \
-       re.search(r'=>|console\.(log|error)', s):
-        return 'javascript'
+    // JavaScript detection  
+    if (/\b(function\s+\w+\s*\(|const\s+\w+\s*=)/.test(s) ||
+        /=>|console\.(log|error)/.test(s)) {
+        return 'javascript';
+    }
     
-    # Bash detection
-    if re.search(r'^#!.*\b(bash|sh)\b', s, re.M) or \
-       re.search(r'\b(if|then|fi|for|in|do|done)\b', s):
-        return 'bash'
+    // Bash detection
+    if (/^#!.*\b(bash|sh)\b/m.test(s) ||
+        /\b(if|then|fi|for|in|do|done)\b/.test(s)) {
+        return 'bash';
+    }
     
-    # SQL detection
-    if re.search(r'\b(SELECT|INSERT|UPDATE|DELETE|CREATE)\s+', s, re.I):
-        return 'sql'
+    // SQL detection
+    if (/\b(SELECT|INSERT|UPDATE|DELETE|CREATE)\s+/i.test(s)) {
+        return 'sql';
+    }
         
-    return 'text'
+    return 'text';
+}
 
-def format_markdown(content):
-    """Format markdown content with language detection."""
-    # Fix unlabeled code fences
-    def add_lang_to_fence(match):
-        indent, info, body, closing = match.groups()
-        if not info.strip():
-            lang = detect_language(body)
-            return f"{indent}```{lang}\n{body}{closing}\n"
-        return match.group(0)
+function formatMarkdown(content: string): string {
+    // Fix unlabeled code fences
+    function addLangToFence(match: string, indent: string, info: string, body: string, closing: string): string {
+        if (!info.trim()) {
+            const lang = detectLanguage(body);
+            return `${indent}\`\`\`${lang}\n${body}${closing}\n`;
+        }
+        return match;
+    }
     
-    fence_pattern = r'(?ms)^([ \t]{0,3})```([^\n]*)\n(.*?)(\n\1```)\s*$'
-    content = re.sub(fence_pattern, add_lang_to_fence, content)
+    const fencePattern = /(?:^([ \t]{0,3})```([^\n]*)\n(.*?)(\n\1```)\s*$)/gms;
+    content = content.replace(fencePattern, addLangToFence);
     
-    # Fix excessive blank lines (only outside code fences)
-    content = re.sub(r'\n{3,}', '\n\n', content)
+    // Fix excessive blank lines (only outside code fences)
+    content = content.replace(/\n{3,}/g, '\n\n');
     
-    return content.rstrip() + '\n'
+    return content.trimEnd() + '\n';
+}
 
-# Main execution
-try:
-    input_data = json.load(sys.stdin)
-    file_path = input_data.get('tool_input', {}).get('file_path', '')
+// Main execution
+try {
+    const inputData = JSON.parse(await new Promise<string>((resolve, reject) => {
+        let data = '';
+        process.stdin.on('data', chunk => data += chunk);
+        process.stdin.on('end', () => resolve(data));
+        process.stdin.on('error', reject);
+    }));
     
-    if not file_path.endswith(('.md', '.mdx')):
-        sys.exit(0)  # Not a markdown file
+    const filePath = inputData?.tool_input?.file_path || '';
     
-    if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+    if (!filePath.endsWith('.md') && !filePath.endsWith('.mdx')) {
+        process.exit(0); // Not a markdown file
+    }
+    
+    if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const formatted = formatMarkdown(content);
         
-        formatted = format_markdown(content)
-        
-        if formatted != content:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(formatted)
-            print(f"✓ Fixed markdown formatting in {file_path}")
-    
-except Exception as e:
-    print(f"Error formatting markdown: {e}", file=sys.stderr)
-    sys.exit(1)
+        if (formatted !== content) {
+            fs.writeFileSync(filePath, formatted);
+            console.log(`✓ Fixed markdown formatting in ${filePath}`);
+        }
+    }
+} catch (error) {
+    console.error(`Error formatting markdown: ${error}`, process.stderr);
+    process.exit(1);
+}
 ````
 
 Make the script executable:
 
 ```bash
-chmod +x .claude/hooks/markdown_formatter.py
+chmod +x .claude/hooks/markdown_formatter.ts
 ```
 
 This hook automatically:
@@ -314,7 +326,7 @@ Block edits to sensitive files:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import json, sys; data=json.load(sys.stdin); path=data.get('tool_input',{}).get('file_path',''); sys.exit(2 if any(p in path for p in ['.env', 'package-lock.json', '.git/']) else 0)\""
+            "command": "node -e \"const data = JSON.parse(require('fs').readFileSync(0, 'utf8')); const path = data.tool_input?.file_path || ''; process.exit(['.env', 'package-lock.json', '.git/'].some(p => path.includes(p)) ? 2 : 0)\""
           }
         ]
       }

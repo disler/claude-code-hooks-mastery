@@ -18,7 +18,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "uv run .claude/status_lines/status_line.py",
+    "command": "npx ts-node .claude/status_lines/status_line.ts",
     "padding": 0
   },
   "hooks": {
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/pre_tool_use.py"
+            "command": "npx ts-node .claude/hooks/pre_tool_use.ts"
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/post_tool_use.py"
+            "command": "npx ts-node .claude/hooks/post_tool_use.ts"
           }
         ]
       }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/notification.py --notify"
+            "command": "npx ts-node .claude/hooks/notification.ts --notify"
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/stop.py --chat"
+            "command": "npx ts-node .claude/hooks/stop.ts --chat"
           }
         ]
       }
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/subagent_stop.py --notify"
+            "command": "npx ts-node .claude/hooks/subagent_stop.ts --notify"
           }
         ]
       }
@@ -82,7 +82,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/user_prompt_submit.py --log-only --store-last-prompt --name-agent"
+            "command": "npx ts-node .claude/hooks/user_prompt_submit.ts --log-only --store-last-prompt --name-agent"
           }
         ]
       }
@@ -93,7 +93,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/pre_compact.py"
+            "command": "npx ts-node .claude/hooks/pre_compact.ts"
           }
         ]
       }
@@ -104,7 +104,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/session_start.py"
+            "command": "npx ts-node .claude/hooks/session_start.ts"
           }
         ]
       }

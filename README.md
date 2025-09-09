@@ -4,11 +4,37 @@
 
 <img src="images/hooked.png" alt="Claude Code Hooks" style="max-width: 800px; width: 100%;" />
 
+## 🚨 Breaking Changes: Python to TypeScript Migration
+
+This project has been completely migrated from Python to TypeScript for improved type safety, better performance, and modern JavaScript ecosystem integration.
+
+### Migration Guide
+
+**For existing Python users:**
+1. Run the migration helper: `node scripts/migrate-from-python.js`
+2. Install Node.js dependencies: `npm install`
+3. Build TypeScript files: `npm run build:hooks`
+4. Update Claude Code settings to use compiled hooks in `dist/.claude/hooks/`
+
+**Key changes:**
+- **Language**: All hooks now written in TypeScript instead of Python
+- **Runtime**: Requires Node.js 18+ instead of Python 3.8+
+- **Execution**: Use `tsx` for direct TS execution or compile to JS
+- **Dependencies**: Managed via npm/package.json instead of pip/requirements
+- **Performance**: Faster execution with tsx runtime vs Python interpreter
+
+**Compatibility notes:**
+- Python hooks are backed up but no longer maintained
+- Custom Python code needs manual porting to TypeScript
+- Environment variables (.env) work identically
+- JSON logging format remains unchanged
+
 ## Prerequisites
 
 This requires:
-- **[Astral UV](https://docs.astral.sh/uv/getting-started/installation/)** - Fast Python package installer and resolver
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** - Anthropic's CLI for Claude AI
+- **[Node.js](https://nodejs.org/)** - Version 18 or higher (for TypeScript hooks)
+- **[npm](https://www.npmjs.com/)** - Node package manager (comes with Node.js)
 
 Optional:
 - **[ElevenLabs](https://elevenlabs.io/)** - Text-to-speech provider (with MCP server integration)
@@ -87,39 +113,43 @@ This demo captures all 8 Claude Code hook lifecycle events with their JSON paylo
 
 > **Warning:** The `chat.json` file contains only the most recent Claude Code conversation. It does not preserve conversations from previous sessions - each new conversation is fully copied and overwrites the previous one. This is unlike the other logs which are appended to from every claude code session.
 
-## UV Single-File Scripts Architecture
+## TypeScript Architecture
 
-This project leverages **[UV single-file scripts](https://docs.astral.sh/uv/guides/scripts/)** to keep hook logic cleanly separated from your main codebase. All hooks live in `.claude/hooks/` as standalone Python scripts with embedded dependency declarations.
+This project uses TypeScript for all hooks and utilities, providing strong type safety and modern JavaScript features. All hooks live in `.claude/hooks/` as TypeScript scripts that can be executed directly with `tsx` or compiled to JavaScript.
 
 **Benefits:**
-- **Isolation** - Hook logic stays separate from your project dependencies
-- **Portability** - Each hook script declares its own dependencies inline
-- **No Virtual Environment Management** - UV handles dependencies automatically
-- **Fast Execution** - UV's dependency resolution is lightning-fast
-- **Self-Contained** - Each hook can be understood and modified independently
+- **Type Safety** - Comprehensive type definitions prevent runtime errors
+- **Modern Syntax** - Async/await, destructuring, ES modules
+- **Better IDE Support** - IntelliSense, refactoring, and navigation
+- **Performance** - tsx runtime provides fast execution
+- **Ecosystem** - Access to npm's vast package repository
 
-This approach ensures your hooks remain functional across different environments without polluting your main project's dependency tree.
+The TypeScript implementation includes:
+- Centralized type definitions in `types/index.ts`
+- Proper error handling with custom error classes
+- Type guards for runtime validation
+- Full ESLint and Prettier configuration
 
 ## Key Files
 
 - `.claude/settings.json` - Hook configuration with permissions
-- `.claude/hooks/` - Python scripts using uv for each hook type
-  - `user_prompt_submit.py` - Prompt validation, logging, and context injection
-  - `pre_tool_use.py` - Security blocking and logging
-  - `post_tool_use.py` - Logging and transcript conversion
-  - `notification.py` - Logging with optional TTS (--notify flag)
-  - `stop.py` - AI-generated completion messages with TTS
-  - `subagent_stop.py` - Simple "Subagent Complete" TTS
-  - `pre_compact.py` - Transcript backup and compaction logging
-  - `session_start.py` - Development context loading and session logging
+- `.claude/hooks/` - TypeScript scripts for each hook type
+  - `user_prompt_submit.ts` - Prompt validation, logging, and context injection
+  - `pre_tool_use.ts` - Security blocking and logging
+  - `post_tool_use.ts` - Logging and transcript conversion
+  - `notification.ts` - Logging with optional TTS (--notify flag)
+  - `stop.ts` - AI-generated completion messages with TTS
+  - `subagent_stop.ts` - Simple "Subagent Complete" TTS
+  - `pre_compact.ts` - Transcript backup and compaction logging
+  - `session_start.ts` - Development context loading and session logging
   - `utils/` - Intelligent TTS and LLM utility scripts
     - `tts/` - Text-to-speech providers (ElevenLabs, OpenAI, pyttsx3)
     - `llm/` - Language model integrations (OpenAI, Anthropic, Ollama)
 - `.claude/status_lines/` - Real-time terminal status displays
-  - `status_line.py` - Basic MVP with git info
-  - `status_line_v2.py` - Smart prompts with color coding
-  - `status_line_v3.py` - Agent sessions with history
-  - `status_line_v4.py` - Extended metadata support
+  - `status_line.ts` - Basic MVP with git info
+  - `status_line_v2.ts` - Smart prompts with color coding
+  - `status_line_v3.ts` - Agent sessions with history
+  - `status_line_v4.ts` - Extended metadata support
 - `.claude/output-styles/` - Response formatting configurations
   - `genui.md` - Generates beautiful HTML with embedded styling
   - `table-based.md` - Organizes information in markdown tables
@@ -192,20 +222,13 @@ Each hook type has different capabilities for blocking and controlling Claude Co
 - **Primary Control Point**: Intercepts user prompts before Claude processes them
 - **Exit Code 2 Behavior**: Blocks the prompt entirely, shows error message to user
 - **Use Cases**: Prompt validation, security filtering, context injection, audit logging
-- **Example**: Our `user_prompt_submit.py` logs all prompts and can validate them
+- **Example**: Our `user_prompt_submit.ts` logs all prompts and can validate them
 
 #### PreToolUse Hook - **CAN BLOCK TOOL EXECUTION**
 - **Primary Control Point**: Intercepts tool calls before they execute
 - **Exit Code 2 Behavior**: Blocks the tool call entirely, shows error message to Claude
 - **Use Cases**: Security validation, parameter checking, dangerous command prevention
-- **Example**: Our `pre_tool_use.py` blocks `rm -rf` commands with exit code 2
-
-```python
-# Block dangerous commands
-if is_dangerous_rm_command(command):
-    print("BLOCKED: Dangerous rm command detected", file=sys.stderr)
-    sys.exit(2)  # Blocks tool call, shows error to Claude
-```
+- **Example**: Our `pre_tool_use.ts` blocks `rm -rf` commands with exit code 2
 
 #### PostToolUse Hook - **CANNOT BLOCK (Tool Already Executed)**
 - **Primary Control Point**: Provides feedback after tool completion
@@ -229,19 +252,19 @@ if is_dangerous_rm_command(command):
 - **Primary Control Point**: Intercepts when Claude Code subagents try to finish
 - **Exit Code 2 Behavior**: Blocks subagent stoppage, shows error to subagent
 - **Use Cases**: Ensuring subagent tasks complete properly
-- **Example**: Our `subagent_stop.py` logs events and announces completion
+- **Example**: Our `subagent_stop.ts` logs events and announces completion
 
 #### PreCompact Hook - **CANNOT BLOCK**
 - **Primary Control Point**: Fires before compaction operations
 - **Exit Code 2 Behavior**: N/A - shows stderr to user only, no blocking capability
 - **Use Cases**: Transcript backup, context preservation, pre-compaction logging
-- **Example**: Our `pre_compact.py` creates transcript backups before compaction
+- **Example**: Our `pre_compact.ts` creates transcript backups before compaction
 
 #### SessionStart Hook - **CANNOT BLOCK**
 - **Primary Control Point**: Fires when new sessions start or resume
 - **Exit Code 2 Behavior**: N/A - shows stderr to user only, no blocking capability
 - **Use Cases**: Loading development context, session initialization, environment setup
-- **Example**: Our `session_start.py` loads git status, recent issues, and context files
+- **Example**: Our `session_start.ts` loads git status, recent issues, and context files
 
 ### Advanced JSON Output Control
 
@@ -298,48 +321,6 @@ When multiple control mechanisms are used, they follow this priority:
 2. **`"decision": "block"`** - Hook-specific blocking behavior
 3. **Exit Code 2** - Simple blocking via stderr
 4. **Other Exit Codes** - Non-blocking errors
-
-### Security Implementation Examples
-
-#### 1. Command Validation (PreToolUse)
-```python
-# Block dangerous patterns
-dangerous_patterns = [
-    r'rm\s+.*-[rf]',           # rm -rf variants
-    r'sudo\s+rm',              # sudo rm commands
-    r'chmod\s+777',            # Dangerous permissions
-    r'>\s*/etc/',              # Writing to system directories
-]
-
-for pattern in dangerous_patterns:
-    if re.search(pattern, command, re.IGNORECASE):
-        print(f"BLOCKED: {pattern} detected", file=sys.stderr)
-        sys.exit(2)
-```
-
-#### 2. Result Validation (PostToolUse)
-```python
-# Validate file operations
-if tool_name == "Write" and not tool_response.get("success"):
-    output = {
-        "decision": "block",
-        "reason": "File write operation failed, please check permissions and retry"
-    }
-    print(json.dumps(output))
-    sys.exit(0)
-```
-
-#### 3. Completion Validation (Stop Hook)
-```python
-# Ensure critical tasks are complete
-if not all_tests_passed():
-    output = {
-        "decision": "block",
-        "reason": "Tests are failing. Please fix failing tests before completing."
-    }
-    print(json.dumps(output))
-    sys.exit(0)
-```
 
 ### Hook Execution Environment
 
@@ -427,7 +408,7 @@ The hook is configured in `.claude/settings.json`:
     "hooks": [
       {
         "type": "command",
-        "command": "uv run .claude/hooks/user_prompt_submit.py --log-only"
+        "command": "npx ts-node .claude/hooks/user_prompt_submit.ts --log-only"
       }
     ]
   }
@@ -624,10 +605,10 @@ This project includes enhanced Claude Code status lines that display real-time c
 
 | Version | File                | Description       | Features                                                 |
 | ------- | ------------------- | ----------------- | -------------------------------------------------------- |
-| **v1**  | `status_line.py`    | Basic MVP         | Git branch, directory, model info                        |
-| **v2**  | `status_line_v2.py` | Smart prompts     | Latest prompt (250 chars), color-coded by task type      |
-| **v3**  | `status_line_v3.py` | Agent sessions    | Agent name, model, last 3 prompts                        |
-| **v4**  | `status_line_v4.py` | Extended metadata | Agent name, model, latest prompt, custom key-value pairs |
+| **v1**  | `status_line.ts`    | Basic MVP         | Git branch, directory, model info                        |
+| **v2**  | `status_line_v2.ts` | Smart prompts     | Latest prompt (250 chars), color-coded by task type      |
+| **v3**  | `status_line_v3.ts` | Agent sessions    | Agent name, model, last 3 prompts                        |
+| **v4**  | `status_line_v4.ts` | Extended metadata | Agent name, model, latest prompt, custom key-value pairs |
 
 ### Session Management
 
@@ -650,7 +631,7 @@ Status lines leverage session data stored in `.claude/data/sessions/<session_id>
 - Automatically generates unique agent names using LLM services
 - Priority: Ollama (local) → Anthropic → OpenAI → Fallback names
 - Names are single-word, memorable identifiers (e.g., Phoenix, Sage, Nova)
-- Enabled via `--name-agent` flag in `user_prompt_submit.py`
+- Enabled via `--name-agent` flag in `user_prompt_submit.ts`
 
 **Custom Metadata (v4):**
 - Use `/update_status_line` command to add custom key-value pairs
@@ -665,7 +646,7 @@ Set your preferred status line in `.claude/settings.json`:
 ```json
 {
   "StatusLine": {
-    "command": "uv run .claude/status_lines/status_line_v3.py"
+    "command": "npx ts-node .claude/status_lines/status_line_v3.ts"
   }
 }
 ```

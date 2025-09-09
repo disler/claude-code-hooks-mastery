@@ -41,64 +41,77 @@ The UserPromptSubmit hook receives the following JSON payload via stdin:
 
 The most basic use case is logging all user prompts for auditing purposes:
 
-```python
-# Log user prompt to session directory
-log_dir = ensure_session_log_dir(session_id)
-log_file = log_dir / 'user_prompt_submit.json'
+```typescript
+// Log user prompt to session directory
+const logDir = ensureSessionLogDir(sessionId);
+const logFile = path.join(logDir, 'user_prompt_submit.json');
 
-# Append to existing log
-log_data.append(input_data)
-with open(log_file, 'w') as f:
-    json.dump(log_data, f, indent=2)
+// Append to existing log
+logData.push(inputData);
+fs.writeFileSync(logFile, JSON.stringify(logData, null, 2));
 ```
 
 ### 2. Prompt Validation and Blocking
 
 The hook can validate prompts and block them if they violate policies:
 
-```python
-def validate_prompt(prompt):
-    """Validate the user prompt for security or policy violations."""
-    blocked_patterns = [
-        ('sudo rm -rf /', 'Dangerous command detected'),
-        ('delete all', 'Overly broad deletion request'),
-        ('api_key', 'Potential secret exposure risk')
-    ]
+```typescript
+function validatePrompt(prompt: (message?: string, _default?: string) => (string | null)): {
+    isValid: boolean;
+    reason?: string
+} {
+    // Validate the user prompt for security or policy violations
+    const blockedPatterns = [
+        ['sudo rm -rf /', 'Dangerous command detected'],
+        ['delete all', 'Overly broad deletion request'],
+        ['api_key', 'Potential secret exposure risk']
+    ];
     
-    prompt_lower = prompt.lower()
+    const promptLower = new toString()prompt;
     
-    for pattern, reason in blocked_patterns:
-        if pattern.lower() in prompt_lower:
-            return False, reason
+    for (const [pattern, reason] of blockedPatterns) {
+        if (promptLower.includes(pattern.toLowerCase())) {
+            return { isValid: false, reason };
+        }
+    }
     
-    return True, None
+    return { isValid: true };
+}
 
-# In main():
-is_valid, reason = validate_prompt(prompt)
-if not is_valid:
-    print(f"Prompt blocked: {reason}", file=sys.stderr)
-    sys.exit(2)  # Exit code 2 blocks the prompt
+// In main():
+const { isValid, reason } = validatePrompt(prompt);
+if (!isValid) {
+    console.error(`Prompt blocked: ${reason}`);
+}
+}
+
+}
+
+
+
+    
 ```
 
 ### 3. Context Injection
 
 The hook can print additional context that gets prepended to the user's prompt:
 
-```python
-# Add context information that will be included in the prompt
-print(f"Project: {project_name}")
-print(f"Current branch: {git_branch}")
-print(f"Time: {datetime.now()}")
+```typescript
+// Add context information that will be included in the prompt
+console.log(`Project: ${projectName}`);
+console.log(`Current branch: ${gitBranch}`);
+console.log(`Time: ${new Date().toISOString()}`);
 ```
 
 ### 4. Prompt Modification
 
 While the hook cannot directly modify the prompt text, it can provide additional context that effectively changes what Claude sees:
 
-```python
-# Example: Add coding standards reminder
-if "write code" in prompt.lower():
-    print("Remember: Follow PEP 8 style guide and include type hints")
+```typescript
+// Example: Add coding standards reminder
+if (prompt.toLowerCase().includes("write code")) {
+    console.log("Remember: Follow TypeScript best practices and include proper type annotations");
+}
 ```
 
 ## Exit Codes and Flow Control
@@ -133,170 +146,152 @@ Beyond simple exit codes, UserPromptSubmit can return structured JSON:
 
 ### Example 1: Basic Logging
 
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# ///
+```typescript
+#!/usr/bin/env npx ts-node
 
-import json
-import sys
-from pathlib import Path
+import * as fs from 'fs';
+import * as path from 'path';
 
-# Read input
-input_data = json.loads(sys.stdin.read())
-session_id = input_data.get('session_id', 'unknown')
-prompt = input_data.get('prompt', '')
+// Read input
+const input = fs.readFileSync(0, 'utf-8');
+const inputData = JSON.parse(input);
+const sessionId = inputData.session_id || 'unknown';
+const prompt = inputData.prompt || '';
 
-# Log to file
-log_dir = Path(f"logs/{session_id}")
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / 'user_prompts.json'
+// Log to file
+const logDir = path.join('logs', sessionId);
+fs.mkdirSync(logDir, { recursive: true });
+const logFile = path.join(logDir, 'user_prompts.json');
 
-# Append prompt
-if log_file.exists():
-    with open(log_file, 'r') as f:
-        prompts = json.load(f)
-else:
-    prompts = []
+// Append prompt
+let prompts: any[] = [];
+if (fs.existsSync(logFile)) {
+    const content = fs.readFileSync(logFile, 'utf-8');
+    prompts = JSON.parse(content);
+}
 
-prompts.append({
-    'timestamp': input_data.get('timestamp'),
-    'prompt': prompt
-})
+prompts.push({
+    timestamp: inputData.timestamp,
+    prompt: prompt
+});
 
-with open(log_file, 'w') as f:
-    json.dump(prompts, f, indent=2)
-
-sys.exit(0)
+fs.writeFileSync(logFile, JSON.stringify(prompts, null, 2));
+process.exit(0);
 ```
 
 ### Example 2: Security Validation
 
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# ///
+```typescript
+#!/usr/bin/env npx ts-node
 
-import json
-import sys
-import re
+import * as fs from 'fs';
 
-# Security patterns to block
-DANGEROUS_PATTERNS = [
-    (r'rm\s+-rf\s+/', 'Dangerous system deletion command'),
-    (r'curl.*\|\s*sh', 'Unsafe remote script execution'),
-    (r'eval\s*\(', 'Unsafe code evaluation'),
-    (r'export\s+.*KEY', 'Potential credential exposure'),
-]
+// Security patterns to block
+const DANGEROUS_PATTERNS = [
+    [/rm\s+-rf\s+\//, 'Dangerous system deletion command'],
+    [/curl.*\|\s*sh/, 'Unsafe remote script execution'],
+    [/eval\s*\(/, 'Unsafe code evaluation'],
+    [/export\s+.*KEY/, 'Potential credential exposure'],
+] as const;
 
-input_data = json.loads(sys.stdin.read())
-prompt = input_data.get('prompt', '')
+const input = fs.readFileSync(0, 'utf-8');
+const inputData = JSON.parse(input);
+const prompt = inputData.prompt || '';
 
-# Check for dangerous patterns
-for pattern, reason in DANGEROUS_PATTERNS:
-    if re.search(pattern, prompt, re.IGNORECASE):
-        print(f"Security Policy Violation: {reason}", file=sys.stderr)
-        sys.exit(2)  # Block the prompt
+// Check for dangerous patterns
+for (const [pattern, reason] of DANGEROUS_PATTERNS) {
+    if (pattern.test(prompt)) {
+        console.error(`Security Policy Violation: ${reason}`);
+        process.exit(2); // Block the prompt
+    }
+}
 
-sys.exit(0)
+process.exit(0);
 ```
 
 ### Example 3: Context Enhancement
 
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "python-dotenv",
-# ]
-# ///
+```typescript
+#!/usr/bin/env npx ts-node
 
-import json
-import sys
-import os
-from datetime import datetime
-from dotenv import load_dotenv
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
 
-load_dotenv()
+dotenv.config();
 
-input_data = json.loads(sys.stdin.read())
-prompt = input_data.get('prompt', '')
+const input = fs.readFileSync(0, 'utf-8');
+const inputData = JSON.parse(input);
+const prompt = inputData.prompt || '';
 
-# Add project context for coding requests
-if any(keyword in prompt.lower() for keyword in ['code', 'implement', 'function', 'class']):
-    project_name = os.getenv('PROJECT_NAME', 'Unknown Project')
-    coding_standards = os.getenv('CODING_STANDARDS', 'Follow best practices')
+// Add project context for coding requests
+const codingKeywords = ['code', 'implement', 'function', 'class'];
+if (codingKeywords.some(keyword => prompt.toLowerCase().includes(keyword))) {
+    const projectName = process.env.PROJECT_NAME || 'Unknown Project';
+    const codingStandards = process.env.CODING_STANDARDS || 'Follow best practices';
     
-    print(f"Project: {project_name}")
-    print(f"Standards: {coding_standards}")
-    print(f"Generated at: {datetime.now().isoformat()}")
-    print("---")  # Separator
+    console.log(`Project: ${projectName}`);
+    console.log(`Standards: ${codingStandards}`);
+    console.log(`Generated at: ${new Date().toISOString()}`);
+    console.log("---"); // Separator
+}
 
-sys.exit(0)
+process.exit(0);
 ```
 
 ### Example 4: Intelligent Prompt Analysis
 
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "anthropic",
-#     "python-dotenv",
-# ]
-# ///
+```typescript
+#!/usr/bin/env npx ts-node
 
-import json
-import sys
-import os
-from dotenv import load_dotenv
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
+import Anthropic from '@anthropic-ai/sdk';
 
-load_dotenv()
+dotenv.config();
 
-def analyze_prompt_intent(prompt):
-    """Use LLM to analyze prompt intent and risks."""
-    import anthropic
+async function analyzePromptIntent(prompt: string) {
+    // Use LLM to analyze prompt intent and risks
+    const client = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY
+    });
     
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    const analysisPrompt = `Analyze this user prompt for potential risks or policy violations:
     
-    analysis_prompt = f"""Analyze this user prompt for potential risks or policy violations:
-    
-    Prompt: "{prompt}"
+    Prompt: "${prompt}"
     
     Respond with JSON containing:
     - risk_level: "low", "medium", or "high"
     - concerns: list of specific concerns
     - recommendation: "allow", "block", or "warn"
-    """
+    `;
     
-    response = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=200,
-        messages=[{"role": "user", "content": analysis_prompt}]
-    )
+    const response = await client.messages.create({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 200,
+        messages: [{ role: "user", content: analysisPrompt }]
+    });
     
-    return json.loads(response.content[0].text)
+    return JSON.parse(response.content[0].text);
+}
 
-input_data = json.loads(sys.stdin.read())
-prompt = input_data.get('prompt', '')
+const input = fs.readFileSync(0, 'utf-8');
+const inputData = JSON.parse(input);
+const prompt = inputData.prompt || '';
 
-# Analyze prompt
-analysis = analyze_prompt_intent(prompt)
-
-if analysis['recommendation'] == 'block':
-    print(f"Blocked: {', '.join(analysis['concerns'])}", file=sys.stderr)
-    sys.exit(2)
-elif analysis['recommendation'] == 'warn':
-    # Add warning as context
-    print(f"⚠️  Caution: {', '.join(analysis['concerns'])}")
-    print("Please ensure you understand the implications.")
-    print("---")
-
-sys.exit(0)
+// Analyze prompt
+analyzePromptIntent(prompt).then(analysis => {
+    if (analysis.recommendation === 'block') {
+        console.error(`Blocked: ${analysis.concerns.join(', ')}`);
+        process.exit(2);
+    } else if (analysis.recommendation === 'warn') {
+        // Add warning as context
+        console.log(`⚠️  Caution: ${analysis.concerns.join(', ')}`);
+        console.log("Please ensure you understand the implications.");
+        console.log("---");
+    }
+    
+    process.exit(0);
+});
 ```
 
 ## Configuration Options
@@ -317,11 +312,11 @@ Example configuration in `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "uv run .claude/hooks/user_prompt_submit.py --log-only"
+            "command": "npx ts-node .claude/hooks/user_prompt_submit.ts --log-only"
           },
           {
             "type": "command",
-            "command": "uv run .claude/hooks/send_event.py --source-app my-app --event-type UserPromptSubmit --summarize"
+            "command": "npx ts-node .claude/hooks/send_event.ts --source-app my-app --event-type UserPromptSubmit --summarize"
           }
         ]
       }

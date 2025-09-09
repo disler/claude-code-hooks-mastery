@@ -5,16 +5,32 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node",
-    "test": "node --test"
+    "build:hooks": "tsc && npm run make-executable",
+    "make-executable": "node scripts/make-hooks-executable.js",
+    "dev": "tsx",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
   },
   "keywords": ["claude-code", "hooks", "typescript"],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.0.0"
+    "@types/jest": "^29.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",

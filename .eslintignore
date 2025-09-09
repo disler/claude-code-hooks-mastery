@@ -1,0 +1,10 @@
+dist/
+node_modules/
+coverage/
+*.js
+*.py
+.tmp/
+logs/
+scripts/*.js
+*.config.js
+*.config.ts

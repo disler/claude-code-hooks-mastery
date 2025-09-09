@@ -1,6 +1,6 @@
 # Get started with Claude
 
-In this example, we'll have Claude write a Python function that checks if a string is a palindrome.
+In this example, we'll have Claude write a TypeScript function that checks if a string is a palindrome.
 
 ## Prerequisites
 
@@ -8,9 +8,9 @@ You will need:
 
 - An Anthropic [Console account](https://console.anthropic.com/)
 - An [API key](https://console.anthropic.com/settings/keys)
-- Python 3.7+ or TypeScript 4.5+
+- TypeScript 4.5+ and Node.js
 
-Anthropic provides [Python and TypeScript SDKs](https://docs.anthropic.com/en/api/client-sdks), although you can make direct HTTP requests to the API.
+Anthropic provides [TypeScript and Python SDKs](https://docs.anthropic.com/en/api/client-sdks), although you can make direct HTTP requests to the API.
 
 ## Start with the Workbench
 
@@ -71,32 +71,16 @@ Click **Get Code** to copy the generated code representing your Workbench sessio
 
 ## Install the SDK
 
-Anthropic provides SDKs for [Python](https://pypi.org/project/anthropic/) (3.7+), [TypeScript](https://www.npmjs.com/package/@anthropic-ai/sdk) (4.5+), and [Java](https://central.sonatype.com/artifact/com.anthropic/anthropic-java/) (8+). We also currently have a [Go](https://pkg.go.dev/github.com/anthropics/anthropic-sdk-go) SDK in beta.
-
-### Python
-
-In your project directory, create a virtual environment.
-
-```bash
-python -m venv claude-env
-```
-
-Activate the virtual environment using
-
-- On macOS or Linux, `source claude-env/bin/activate`
-- On Windows, `claude-env\Scripts\activate`
-
-```bash
-pip install anthropic
-```
+Anthropic provides SDKs for [TypeScript](https://www.npmjs.com/package/@anthropic-ai/sdk) (4.5+), [Python](https://pypi.org/project/anthropic/) (3.7+), and [Java](https://central.sonatype.com/artifact/com.anthropic/anthropic-java/) (8+). We also currently have a [Go](https://pkg.go.dev/github.com/anthropics/anthropic-sdk-go) SDK in beta.
 
 ### TypeScript
 
-Install the SDK.
+In your project directory, install the Anthropic SDK:
 
 ```bash
-npm install @anthropic-ai/sdk
+npm install @anthropic-ai/sdk @types/node ts-node
 ```
+
 
 ### Java
 
@@ -133,39 +117,44 @@ Call the API by passing the proper parameters to the [/messages](https://docs.an
 
 Note that the code provided by the Workbench sets the API key in the constructor. If you set the API key as an environment variable, you can omit that line as below.
 
-### Python
+### TypeScript
 
-```python
-import anthropic
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
 
-client = anthropic.Anthropic()
+const client = new Anthropic();
 
-message = client.messages.create(
-    model="claude-opus-4-20250514",
-    max_tokens=1000,
-    temperature=1,
-    system="You are a world-class poet. Respond only with short poems.",
-    messages=[
+const message = await client.messages.create({
+    model: "claude-opus-4-20250514",
+    max_tokens: 1000,
+    temperature: 1,
+    system: "You are a world-class poet. Respond only with short poems.",
+    messages: [
         {
-            "role": "user",
-            "content": [
+            role: "user",
+            content: [
                 {
-                    "type": "text",
-                    "text": "Why is the ocean salty?"
+                    type: "text",
+                    text: "Why is the ocean salty?"
                 }
             ]
         }
     ]
-)
-print(message.content)
+});
+console.log(message.content);
 ```
 
-Run the code using `python3 claude_quickstart.py` or `node claude_quickstart.js`.
+Run the code using `npx ts-node claude_quickstart.ts`.
 
-Output (Python)
+Output (TypeScript)
 
-```python
-[TextBlock(text="The ocean's salty brine,\nA tale of time and design.\nRocks and rivers, their minerals shed,\nAccumulating in the ocean's bed.\nEvaporation leaves salt behind,\nIn the vast waters, forever enshrined.", type='text')]
+```typescript
+[
+  {
+    type: 'text',
+    text: "The ocean's salty brine,\nA tale of time and design.\nRocks and rivers, their minerals shed,\nAccumulating in the ocean's bed.\nEvaporation leaves salt behind,\nIn the vast waters, forever enshrined."
+  }
+]
 ```
 
 The Workbench and code examples use default model settings for: model (name), temperature, and max tokens to sample.

@@ -132,7 +132,7 @@ Style: Light orange background, orange left border
 Style: Light red background, red left border
 
 ## Code Display
-- Syntax highlighting through class names (language-python, language-javascript, etc.)
+- Syntax highlighting through class names (language-typescript, language-javascript, etc.)
 - Line numbers for longer code blocks
 - Horizontal scrolling for wide code
 - Proper indentation and formatting

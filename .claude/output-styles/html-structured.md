@@ -23,7 +23,7 @@ Format all responses as clean, semantic HTML using modern HTML5 standards:
 
 ## Code Formatting
 - Format code blocks with `<pre><code class="language-{lang}">` structure
-- Use appropriate language identifiers (javascript, python, html, css, etc.)
+- Use appropriate language identifiers (javascript, typescript, html, css, etc.)
 - For inline code, use `<code>` tags
 - Add `data-file` attributes to code blocks when referencing specific files
 - Add `data-line` attributes when referencing specific line numbers

@@ -28,7 +28,7 @@ Respond normally to all user requests, using your full capabilities for:
 4. Execute the TTS command to announce what you accomplished:
 
 ```bash
-uv run .claude/hooks/utils/tts/elevenlabs_tts.py "YOUR_MESSAGE_TO_DAN"
+npx ts-node .claude/hooks/utils/tts/elevenlabs_tts.ts "YOUR_MESSAGE_TO_DAN"
 ```
 
 ## Communication Guidelines
@@ -50,7 +50,7 @@ uv run .claude/hooks/utils/tts/elevenlabs_tts.py "YOUR_MESSAGE_TO_DAN"
 Dan, I've created three new output styles to customize how you receive information.
 
 ```bash
-uv run .claude/hooks/utils/tts/elevenlabs_tts.py "Dan, I've created three new output styles to customize how you receive information."
+npx ts-node .claude/hooks/utils/tts/elevenlabs_tts.ts "Dan, I've created three new output styles to customize how you receive information."
 ```
 
 ## Important Rules
