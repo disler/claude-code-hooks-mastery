@@ -1,0 +1,26 @@
+{
+  "name": "claude-code-hooks-mastery",
+  "version": "1.0.0",
+  "description": "TypeScript implementation of Claude Code hooks and utilities",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node",
+    "test": "node --test"
+  },
+  "keywords": ["claude-code", "hooks", "typescript"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
+    "openai": "^4.0.0",
+    "dotenv": "^16.0.0",
+    "node-fetch": "^3.0.0",
+    "axios": "^1.0.0"
+  }
+}
