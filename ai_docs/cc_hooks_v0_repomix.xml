@@ -79,7 +79,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_full_data.py pre"
+            "command": "npx ts-node scripts/log_full_data.ts pre"
           }
         ]
       },
@@ -88,7 +88,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_tool_use.py pre"
+            "command": "npx ts-node scripts/log_tool_use.ts pre"
           }
         ]
       },
@@ -97,7 +97,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/validate_bash_command.py"
+            "command": "npx ts-node scripts/validate_bash_command.ts"
           }
         ]
       },
@@ -106,7 +106,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/track_file_changes.py"
+            "command": "npx ts-node scripts/track_file_changes.ts"
           }
         ]
       }
@@ -117,7 +117,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_full_data.py post"
+            "command": "npx ts-node scripts/log_full_data.ts post"
           }
         ]
       },
@@ -126,7 +126,7 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_tool_use.py post"
+            "command": "npx ts-node scripts/log_tool_use.ts post"
           }
         ]
       },
@@ -146,11 +146,11 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_full_data.py notification"
+            "command": "npx ts-node scripts/log_full_data.ts notification"
           },
           {
             "type": "command",
-            "command": "python3 scripts/custom_notifier.py"
+            "command": "npx ts-node scripts/custom_notifier.ts"
           }
         ]
       }
@@ -161,11 +161,11 @@ This section contains the contents of the repository's files.
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/log_full_data.py stop"
+            "command": "npx ts-node scripts/log_full_data.ts stop"
           },
           {
             "type": "command",
-            "command": "python3 scripts/session_summary.py"
+            "command": "npx ts-node scripts/session_summary.ts"
           }
         ]
       }
@@ -479,52 +479,58 @@ If `continue` is false, Claude stops processing after the hooks run.
 
 #### JSON Output Example: Bash Command Editing
 
-```python
-#!/usr/bin/env python3
-import json
-import re
-import sys
+```typescript
+#!/usr/bin/env npx ts-node
+import * as fs from 'fs';
+import * as process from 'process';
 
-# Define validation rules as a list of (regex pattern, message) tuples
-VALIDATION_RULES = [
-    (
-        r"\bgrep\b(?!.*\|)",
+// Define validation rules as array of [regex pattern, message] tuples
+const VALIDATION_RULES: [RegExp, string][] = [
+    [
+        /\bgrep\b(?!.*\|)/,
         "Use 'rg' (ripgrep) instead of 'grep' for better performance and features",
-    ),
-    (
-        r"\bfind\s+\S+\s+-name\b",
+    ],
+    [
+        /\bfind\s+\S+\s+-name\b/,
         "Use 'rg --files | rg pattern' or 'rg --files -g pattern' instead of 'find -name' for better performance",
-    ),
-]
+    ],
+];
 
-def validate_command(command: str) -> list[str]:
-    issues = []
-    for pattern, message in VALIDATION_RULES:
-        if re.search(pattern, command):
-            issues.append(message)
-    return issues
+function validateCommand(command: string): string[] {
+    const issues: string[] = [];
+    for (const [pattern, message] of VALIDATION_RULES) {
+        if (pattern.test(command)) {
+            issues.push(message);
+        }
+    }
+    return issues;
+}
 
-try:
-    input_data = json.load(sys.stdin)
-except json.JSONDecodeError as e:
-    print(f"Error: Invalid JSON input: {e}", file=sys.stderr)
-    sys.exit(1)
-
-tool_name = input_data.get("tool_name", "")
-tool_input = input_data.get("tool_input", {})
-command = tool_input.get("command", "")
-
-if tool_name != "Bash" or not command:
-    sys.exit(1)
-
-# Validate the command
-issues = validate_command(command)
-
-if issues:
-    for message in issues:
-        print(f"• {message}", file=sys.stderr)
-    # Exit code 2 blocks tool call and shows stderr to Claude
-    sys.exit(2)
+try {
+    const inputData = JSON.parse(fs.readFileSync(0, 'utf8'));
+    
+    const toolName = inputData.tool_name || "";
+    const toolInput = inputData.tool_input || {};
+    const command = toolInput.command || "";
+    
+    if (toolName !== "Bash" || !command) {
+        process.exit(1);
+    }
+    
+    // Validate the command
+    const issues = validateCommand(command);
+    
+    if (issues.length > 0) {
+        for (const message of issues) {
+            console.error(`• ${message}`);
+        }
+        // Exit code 2 blocks tool call and shows stderr to Claude
+        process.exit(2);
+    }
+} catch (e: any) {
+    console.error(`Error: Invalid JSON input: ${e.message}`);
+    process.exit(1);
+}
 ```
 
 ## Working with MCP Tools
@@ -561,7 +567,7 @@ You can target specific MCP tools or entire MCP servers:
         "hooks": [
           {
             "type": "command",
-            "command": "/home/user/scripts/validate-mcp-write.py"
+            "command": "npx ts-node /home/user/scripts/validate-mcp-write.ts"
           }
         ]
       }
@@ -607,7 +613,7 @@ Customize the notification that is sent when Claude Code requests permission or 
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/my_custom_notifier.py"
+            "command": "npx ts-node ~/my_custom_notifier.ts"
           }
         ]
       }
@@ -1073,7 +1079,7 @@ MCP tools follow the naming pattern `mcp__<server>__<tool>`. Their data structur
 ## Debugging Tips
 
 To see actual data structures:
-1. Use the `log_full_data.py` script to capture all hook data
+1. Use the `log_full_data.ts` script to capture all hook data
 2. Check `logs/tool-data-structures.jsonl` for raw data
 3. Review `logs/tool-data-*.json` for pretty-printed examples
 4. Use `jq` to explore the JSON structure interactively
@@ -1232,7 +1238,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/check_branch.py"
+            "command": "npx ts-node scripts/check_branch.ts"
           }
         ]
       }
@@ -1243,15 +1249,15 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/auto_format.py"
+            "command": "npx ts-node scripts/auto_format.ts"
           },
           {
             "type": "command",
-            "command": "python3 scripts/run_linters.py"
+            "command": "npx ts-node scripts/run_linters.ts"
           },
           {
             "type": "command",
-            "command": "python3 scripts/update_tests.py"
+            "command": "npx ts-node scripts/update_tests.ts"
           }
         ]
       },
@@ -1271,7 +1277,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/slack_notifier.py"
+            "command": "npx ts-node scripts/slack_notifier.ts"
           }
         ]
       }
@@ -1282,11 +1288,11 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/commit_reminder.py"
+            "command": "npx ts-node scripts/commit_reminder.ts"
           },
           {
             "type": "command",
-            "command": "python3 scripts/test_coverage_report.py"
+            "command": "npx ts-node scripts/test_coverage_report.ts"
           }
         ]
       }
@@ -1322,7 +1328,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/security_validator.py"
+            "command": "npx ts-node scripts/security_validator.ts"
           }
         ]
       },
@@ -1331,7 +1337,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/file_security_check.py"
+            "command": "npx ts-node scripts/file_security_check.ts"
           }
         ]
       },
@@ -1340,7 +1346,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/url_validator.py"
+            "command": "npx ts-node scripts/url_validator.ts"
           }
         ]
       }
@@ -1360,7 +1366,7 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
         "hooks": [
           {
             "type": "command",
-            "command": "python3 scripts/audit_logger.py"
+            "command": "npx ts-node scripts/audit_logger.ts"
           }
         ]
       }
@@ -1369,656 +1375,734 @@ cat logs/tool-data-structures.jsonl | jq -r 'select(.parsed_data.tool_name == "B
 }
 </file>
 
-<file path="scripts/custom_notifier.py">
-#!/usr/bin/env python3
-"""
-Custom notification handler for Claude Code.
-Logs notifications and can be extended to send to various notification systems.
-"""
+<file path="scripts/custom_notifier.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Custom notification handler for Claude Code.
+ * Logs notifications and can be extended to send to various notification systems.
+ */
 
-import json
-import sys
-import os
-from datetime import datetime
-from pathlib import Path
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
 
-def main():
-    try:
-        # Read notification data from stdin
-        hook_input = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        sys.exit(0)
+function main(): void {
+    let hookInput: any;
+    try {
+        // Read notification data from stdin
+        const input = fs.readFileSync(0, 'utf8');
+        hookInput = JSON.parse(input);
+    } catch {
+        process.exit(0);
+    }
     
-    # Extract notification details
-    message = hook_input.get("message", "")
-    title = hook_input.get("title", "Claude Code")
-    session_id = hook_input.get("session_id", "unknown")
+    // Extract notification details
+    const message = hookInput.message || "";
+    const title = hookInput.title || "Claude Code";
+    const sessionId = hookInput.session_id || "unknown";
     
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
+    // Ensure logs directory exists
+    const logDir = "logs";
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
     
-    # Log notification to file
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_entry = f"[{timestamp}] [{session_id}] {title}: {message}\n"
+    // Log notification to file
+    const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const logEntry = `[${timestamp}] [${sessionId}] ${title}: ${message}\n`;
     
-    with open(log_dir / "notifications-detailed.log", "a") as f:
-        f.write(log_entry)
+    fs.appendFileSync(path.join(logDir, "notifications-detailed.log"), logEntry);
     
-    # Platform-specific notification (optional)
-    # You can uncomment and customize these based on your platform:
+    // Platform-specific notification (optional)
+    // You can uncomment and customize these based on your platform:
     
-    # macOS notification using osascript
-    if sys.platform == "darwin" and os.path.exists("/usr/bin/osascript"):
-        # Escape quotes for AppleScript
-        escaped_message = message.replace('"', '\\"')
-        escaped_title = title.replace('"', '\\"')
-        # Uncomment to enable desktop notifications:
-        # os.system(f'osascript -e \'display notification "{escaped_message}" with title "{escaped_title}"\'')
+    // macOS notification using osascript
+    if (process.platform === "darwin" && fs.existsSync("/usr/bin/osascript")) {
+        // Escape quotes for AppleScript
+        const escapedMessage = message.replace(/"/g, '\\"');
+        const escapedTitle = title.replace(/"/g, '\\"');
+        // Uncomment to enable desktop notifications:
+        // execSync(`osascript -e 'display notification "${escapedMessage}" with title "${escapedTitle}"'`);
+    }
     
-    # Linux notification using notify-send
-    elif sys.platform.startswith("linux") and os.path.exists("/usr/bin/notify-send"):
-        # Uncomment to enable desktop notifications:
-        # os.system(f'notify-send "{title}" "{message}"')
-        pass
+    // Linux notification using notify-send
+    else if (process.platform === "linux" && fs.existsSync("/usr/bin/notify-send")) {
+        // Uncomment to enable desktop notifications:
+        // execSync(`notify-send "${title}" "${message}"`);
+    }
     
-    # Windows notification (requires win10toast)
-    elif sys.platform == "win32":
-        # Uncomment and install win10toast to enable:
-        # try:
-        #     from win10toast import ToastNotifier
-        #     toaster = ToastNotifier()
-        #     toaster.show_toast(title, message, duration=10)
-        # except ImportError:
-        #     pass
-        pass
+    // Windows notification (requires node-notifier or similar)
+    else if (process.platform === "win32") {
+        // Uncomment and install node-notifier to enable:
+        // const notifier = require('node-notifier');
+        // notifier.notify({ title, message, time: 10000 });
+    }
     
-    sys.exit(0)
+    process.exit(0);
+}
 
-if __name__ == "__main__":
-    main()
+if (require.main === module) {
+    main();
+}
 </file>
 
-<file path="scripts/format_code.sh">
-#!/bin/bash
-#
-# Auto-format code based on file extension.
-# This script runs after file modifications to ensure consistent formatting.
-#
+<file path="scripts/format_code.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Auto-format code based on file extension.
+ * This script runs after file modifications to ensure consistent formatting.
+ */
 
-# Read the hook input
-HOOK_INPUT=$(cat)
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
 
-# Extract file path and tool name using jq
-FILE_PATH=$(echo "$HOOK_INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // ""')
-TOOL_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_name // ""')
+function commandExists(command: string): boolean {
+    try {
+        execSync(`command -v ${command}`, { stdio: 'ignore' });
+        return true;
+    } catch {
+        return false;
+    }
+}
 
-# Only process file modifications
-if [[ ! "$TOOL_NAME" =~ ^(Write|Edit|MultiEdit)$ ]]; then
-    exit 0
-fi
-
-# Skip if no file path
-if [ -z "$FILE_PATH" ] || [ "$FILE_PATH" = "null" ]; then
-    exit 0
-fi
-
-# Log the formatting attempt
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Checking format for: $FILE_PATH" >> logs/formatting.log
-
-# Get file extension
-EXT="${FILE_PATH##*.}"
-BASENAME=$(basename "$FILE_PATH")
-
-# Skip formatting for certain files
-case "$BASENAME" in
-    .gitignore|.env*|*.md|*.txt|*.log|*.json|*.yml|*.yaml)
-        echo "  Skipping format for $BASENAME" >> logs/formatting.log
-        exit 0
-        ;;
-esac
-
-# Format based on extension
-case "$EXT" in
-    py)
-        # Python formatting
-        if command -v black &> /dev/null; then
-            echo "  Running black on $FILE_PATH" >> logs/formatting.log
-            black "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        elif command -v autopep8 &> /dev/null; then
-            echo "  Running autopep8 on $FILE_PATH" >> logs/formatting.log
-            autopep8 --in-place "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        
-        # Python import sorting
-        if command -v isort &> /dev/null; then
-            echo "  Running isort on $FILE_PATH" >> logs/formatting.log
-            isort "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        ;;
-        
-    js|jsx|ts|tsx)
-        # JavaScript/TypeScript formatting
-        if command -v prettier &> /dev/null; then
-            echo "  Running prettier on $FILE_PATH" >> logs/formatting.log
-            prettier --write "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        elif command -v eslint &> /dev/null; then
-            echo "  Running eslint --fix on $FILE_PATH" >> logs/formatting.log
-            eslint --fix "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        ;;
-        
-    go)
-        # Go formatting
-        if command -v gofmt &> /dev/null; then
-            echo "  Running gofmt on $FILE_PATH" >> logs/formatting.log
-            gofmt -w "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        
-        if command -v goimports &> /dev/null; then
-            echo "  Running goimports on $FILE_PATH" >> logs/formatting.log
-            goimports -w "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        ;;
-        
-    rs)
-        # Rust formatting
-        if command -v rustfmt &> /dev/null; then
-            echo "  Running rustfmt on $FILE_PATH" >> logs/formatting.log
-            rustfmt "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        ;;
-        
-    sh|bash)
-        # Shell script formatting
-        if command -v shfmt &> /dev/null; then
-            echo "  Running shfmt on $FILE_PATH" >> logs/formatting.log
-            shfmt -w "$FILE_PATH" 2>> logs/formatting-errors.log || true
-        fi
-        ;;
-        
-    *)
-        echo "  No formatter configured for .$EXT files" >> logs/formatting.log
-        ;;
-esac
-
-# Always exit successfully to not block operations
-exit 0
-</file>
-
-<file path="scripts/log_full_data.py">
-#!/usr/bin/env python3
-"""
-Log complete tool data structures for debugging and exploration.
-Shows all available fields in hook inputs.
-"""
-
-import json
-import sys
-from datetime import datetime
-from pathlib import Path
-
-def main():
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
+function logMessage(message: string): void {
+    const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const logEntry = `[${timestamp}] ${message}\n`;
     
-    # Read raw input
-    raw_input = sys.stdin.read()
+    if (!fs.existsSync('logs')) {
+        fs.mkdirSync('logs', { recursive: true });
+    }
     
-    try:
-        # Parse JSON
-        hook_input = json.loads(raw_input)
-        
-        # Determine hook type from command line args
-        hook_type = "unknown"
-        if len(sys.argv) > 1:
-            hook_type = sys.argv[1]
-        
-        # Create detailed log entry
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "hook_type": hook_type,
-            "raw_input_length": len(raw_input),
-            "parsed_data": hook_input
+    fs.appendFileSync('logs/formatting.log', logEntry);
+}
+
+function runCommand(command: string, filePath: string, commandName: string): void {
+    try {
+        logMessage(`  Running ${commandName} on ${filePath}`);
+        execSync(command, { stdio: 'ignore' });
+    } catch (error: any) {
+        const errorLog = `Error running ${commandName}: ${error.message}\n`;
+        if (!fs.existsSync('logs')) {
+            fs.mkdirSync('logs', { recursive: true });
         }
-        
-        # Write to detailed log file
-        log_file = log_dir / "tool-data-structures.jsonl"
-        with log_file.open("a") as f:
-            json.dump(log_entry, f, indent=2)
-            f.write("\n")
-        
-        # Also write a pretty-printed version for easier reading
-        pretty_file = log_dir / f"tool-data-{hook_type}.json"
-        with pretty_file.open("w") as f:
-            json.dump(hook_input, f, indent=2)
-        
-        # Create a human-readable summary
-        summary_file = log_dir / "tool-data-summary.log"
-        with summary_file.open("a") as f:
-            f.write(f"\n{'='*60}\n")
-            f.write(f"Timestamp: {datetime.now()}\n")
-            f.write(f"Hook Type: {hook_type}\n")
-            f.write(f"Tool Name: {hook_input.get('tool_name', 'N/A')}\n")
-            f.write(f"Session ID: {hook_input.get('session_id', 'N/A')}\n")
-            f.write(f"Available Keys: {', '.join(hook_input.keys())}\n")
-            
-            # Show tool_input structure
-            if 'tool_input' in hook_input:
-                f.write(f"Tool Input Keys: {', '.join(hook_input['tool_input'].keys())}\n")
-            
-            # Show tool_response structure (for post hooks)
-            if 'tool_response' in hook_input:
-                f.write(f"Tool Response Keys: {', '.join(hook_input['tool_response'].keys())}\n")
-            
-            f.write(f"{'='*60}\n")
-        
-    except json.JSONDecodeError as e:
-        # Log error
-        error_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "error": str(e),
-            "raw_input": raw_input[:1000]  # First 1000 chars
-        }
-        
-        error_file = log_dir / "tool-data-errors.jsonl"
-        with error_file.open("a") as f:
-            json.dump(error_entry, f)
-            f.write("\n")
-    
-    # Always exit successfully
-    sys.exit(0)
+        fs.appendFileSync('logs/formatting-errors.log', errorLog);
+    }
+}
 
-if __name__ == "__main__":
-    main()
-</file>
-
-<file path="scripts/log_tool_use.py">
-#!/usr/bin/env python3
-"""
-Universal tool use logger for Claude Code hooks.
-Logs all tool usage to a structured JSON format.
-"""
-
-import json
-import sys
-from datetime import datetime
-from pathlib import Path
-
-def main():
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    
-    # Read hook input from stdin
-    try:
-        hook_input = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        # Log error and exit gracefully
-        with open(log_dir / "hook-errors.log", "a") as f:
-            f.write(f"[{datetime.utcnow().isoformat()}Z] JSON decode error in log_tool_use.py: {e}\n")
-        sys.exit(0)
-    
-    # Determine if this is pre or post hook
-    hook_type = sys.argv[1] if len(sys.argv) > 1 else "unknown"
-    
-    # Create log entry
-    log_entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "hook_type": hook_type,
-        "session_id": hook_input.get("session_id"),
-        "tool_name": hook_input.get("tool_name"),
-        "transcript_path": hook_input.get("transcript_path")
+function main(): void {
+    let hookInput: any;
+    try {
+        const input = fs.readFileSync(0, 'utf8');
+        hookInput = JSON.parse(input);
+    } catch {
+        process.exit(0);
     }
     
-    # Add tool-specific information
-    if hook_type == "pre":
-        log_entry["tool_input"] = hook_input.get("tool_input", {})
-    elif hook_type == "post":
-        log_entry["tool_input"] = hook_input.get("tool_input", {})
-        log_entry["tool_response"] = hook_input.get("tool_response", {})
+    // Extract file path and tool name
+    const filePath = hookInput.tool_input?.file_path || hookInput.tool_input?.notebook_path || "";
+    const toolName = hookInput.tool_name || "";
     
-    # Write to log file
-    log_file = log_dir / "tool-usage.jsonl"
-    with log_file.open("a") as f:
-        json.dump(log_entry, f)
-        f.write("\n")
-    
-    # Success - no output means continue
-    sys.exit(0)
-
-if __name__ == "__main__":
-    main()
-</file>
-
-<file path="scripts/session_summary.py">
-#!/usr/bin/env python3
-"""
-Generate session summary when Claude Code stops.
-Can optionally block stop if tasks are incomplete.
-"""
-
-import json
-import sys
-from datetime import datetime
-from pathlib import Path
-from collections import Counter
-
-def analyze_session(session_id: str) -> dict:
-    """Analyze the session's tool usage."""
-    stats = {
-        "total_tools": 0,
-        "tool_counts": Counter(),
-        "file_reads": [],
-        "file_writes": [],
-        "bash_commands": [],
-        "errors": 0
+    // Only process file modifications
+    if (!["Write", "Edit", "MultiEdit"].includes(toolName)) {
+        process.exit(0);
     }
     
-    # Read tool usage log if it exists
-    tool_log = Path("logs/tool-usage.jsonl")
-    if tool_log.exists():
-        with open(tool_log) as f:
-            for line in f:
-                try:
-                    entry = json.loads(line.strip())
-                    if entry.get("session_id") == session_id:
-                        stats["total_tools"] += 1
-                        tool_name = entry.get("tool_name", "unknown")
-                        stats["tool_counts"][tool_name] += 1
-                        
-                        # Track specific operations
-                        if tool_name == "Read":
-                            file_path = entry.get("tool_input", {}).get("file_path")
-                            if file_path:
-                                stats["file_reads"].append(file_path)
-                        elif tool_name in ["Write", "Edit", "MultiEdit"]:
-                            file_path = entry.get("tool_input", {}).get("file_path")
-                            if file_path:
-                                stats["file_writes"].append(file_path)
-                        elif tool_name == "Bash":
-                            command = entry.get("tool_input", {}).get("command")
-                            if command:
-                                stats["bash_commands"].append(command)
-                        
-                        # Check for errors in post hooks
-                        if entry.get("hook_type") == "post":
-                            response = entry.get("tool_response", {})
-                            if not response.get("success", True) or response.get("exit_code", 0) != 0:
-                                stats["errors"] += 1
-                except:
-                    pass
-    
-    return stats
-
-def check_incomplete_todos(session_id: str) -> list:
-    """Check for incomplete todos in the current session."""
-    # This is a placeholder - in a real implementation, you might
-    # read the TodoRead output from the transcript
-    return []
-
-def main():
-    try:
-        # Read hook input
-        hook_input = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        sys.exit(0)
-    
-    session_id = hook_input.get("session_id", "unknown")
-    transcript_path = hook_input.get("transcript_path", "")
-    stop_hook_active = hook_input.get("stop_hook_active", False)
-    
-    # Don't create infinite loops
-    if stop_hook_active:
-        sys.exit(0)
-    
-    # Analyze the session
-    stats = analyze_session(session_id)
-    
-    # Generate summary
-    summary = f"""
-=== Session Summary ===
-Session ID: {session_id}
-End Time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-Total Tool Calls: {stats['total_tools']}
-Tool Usage:
-"""
-    
-    for tool, count in stats['tool_counts'].most_common():
-        summary += f"  - {tool}: {count}\n"
-    
-    summary += f"""
-Files Read: {len(stats['file_reads'])}
-Files Modified: {len(stats['file_writes'])}
-Bash Commands: {len(stats['bash_commands'])}
-Errors Encountered: {stats['errors']}
-Transcript: {transcript_path}
-=====================
-"""
-    
-    # Write summary to log
-    with open("logs/session-summaries.txt", "a") as f:
-        f.write(summary)
-    
-    # Also create a JSON summary for programmatic access
-    json_summary = {
-        "session_id": session_id,
-        "end_time": datetime.now().isoformat(),
-        "stats": {
-            "total_tools": stats["total_tools"],
-            "tool_counts": dict(stats["tool_counts"]),
-            "files_read": len(stats["file_reads"]),
-            "files_modified": len(stats["file_writes"]),
-            "bash_commands": len(stats["bash_commands"]),
-            "errors": stats["errors"]
-        },
-        "transcript_path": transcript_path
+    // Skip if no file path
+    if (!filePath || filePath === "null") {
+        process.exit(0);
     }
     
-    with open("logs/session-summaries.jsonl", "a") as f:
-        json.dump(json_summary, f)
-        f.write("\n")
+    logMessage(`Checking format for: ${filePath}`);
     
-    # Example: Block stop if there are errors (commented out)
-    # if stats['errors'] > 0:
-    #     output = {
-    #         "decision": "block",
-    #         "reason": f"Session had {stats['errors']} errors. Please review before ending."
-    #     }
-    #     print(json.dumps(output))
-    #     sys.exit(0)
+    // Get file extension and basename
+    const ext = path.extname(filePath).slice(1); // Remove the dot
+    const basename = path.basename(filePath);
     
-    # Example: Check for incomplete todos (commented out)
-    # incomplete = check_incomplete_todos(session_id)
-    # if incomplete:
-    #     output = {
-    #         "decision": "block",
-    #         "reason": f"You have {len(incomplete)} incomplete todos. Complete them?"
-    #     }
-    #     print(json.dumps(output))
-    #     sys.exit(0)
+    // Skip formatting for certain files
+    const skipFiles = ['.gitignore', '.env', '.md', '.txt', '.log', '.json', '.yml', '.yaml'];
+    if (skipFiles.some(skip => basename.includes(skip) || basename.endsWith(skip.slice(1)))) {
+        logMessage(`  Skipping format for ${basename}`);
+        process.exit(0);
+    }
     
-    sys.exit(0)
-
-if __name__ == "__main__":
-    main()
-</file>
-
-<file path="scripts/track_file_changes.py">
-#!/usr/bin/env python3
-"""
-Track file changes for audit purposes.
-Creates a detailed log of all file modifications.
-"""
-
-import json
-import sys
-import os
-from datetime import datetime
-from pathlib import Path
-
-def get_file_info(file_path: str) -> dict:
-    """Get file information if it exists."""
-    try:
-        path = Path(file_path)
-        if path.exists():
-            stat = path.stat()
-            return {
-                "exists": True,
-                "size": stat.st_size,
-                "mode": oct(stat.st_mode),
-                "is_dir": path.is_dir(),
-                "is_file": path.is_file(),
+    // Format based on extension
+    switch (ext) {
+        case 'js':
+        case 'jsx':
+        case 'ts':
+        case 'tsx':
+            // JavaScript/TypeScript formatting
+            if (commandExists('prettier')) {
+                runCommand(`prettier --write "${filePath}"`, filePath, 'prettier');
+            } else if (commandExists('eslint')) {
+                runCommand(`eslint --fix "${filePath}"`, filePath, 'eslint');
             }
-    except:
-        pass
-    return {"exists": False}
-
-def main():
-    try:
-        # Read hook input
-        hook_input = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        sys.exit(0)
-    
-    tool_name = hook_input.get("tool_name", "")
-    if tool_name not in ["Write", "Edit", "MultiEdit", "NotebookEdit"]:
-        sys.exit(0)
-    
-    # Ensure logs directory exists
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    
-    # Extract file path
-    tool_input = hook_input.get("tool_input", {})
-    file_path = tool_input.get("file_path") or tool_input.get("notebook_path", "unknown")
-    
-    # Create detailed log entry
-    log_entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "tool": tool_name,
-        "file": file_path,
-        "session_id": hook_input.get("session_id"),
-        "file_info": get_file_info(file_path),
-        "user": os.environ.get("USER", "unknown"),
-        "cwd": os.getcwd(),
+            break;
+            
+        case 'go':
+            // Go formatting
+            if (commandExists('gofmt')) {
+                runCommand(`gofmt -w "${filePath}"`, filePath, 'gofmt');
+            }
+            
+            if (commandExists('goimports')) {
+                runCommand(`goimports -w "${filePath}"`, filePath, 'goimports');
+            }
+            break;
+            
+        case 'rs':
+            // Rust formatting
+            if (commandExists('rustfmt')) {
+                runCommand(`rustfmt "${filePath}"`, filePath, 'rustfmt');
+            }
+            break;
+            
+        case 'sh':
+        case 'bash':
+            // Shell script formatting
+            if (commandExists('shfmt')) {
+                runCommand(`shfmt -w "${filePath}"`, filePath, 'shfmt');
+            }
+            break;
+            
+        default:
+            logMessage(`  No formatter configured for .${ext} files`);
+            break;
     }
     
-    # Add operation-specific details
-    if tool_name == "Write":
-        log_entry["operation"] = "create_or_overwrite"
-        log_entry["content_length"] = len(tool_input.get("content", ""))
-    elif tool_name == "Edit":
-        log_entry["operation"] = "edit"
-        log_entry["old_string_length"] = len(tool_input.get("old_string", ""))
-        log_entry["new_string_length"] = len(tool_input.get("new_string", ""))
-        log_entry["replace_all"] = tool_input.get("replace_all", False)
-    elif tool_name == "MultiEdit":
-        log_entry["operation"] = "multi_edit"
-        log_entry["edit_count"] = len(tool_input.get("edits", []))
-    
-    # Write to audit log
-    with open(log_dir / "file-changes-audit.jsonl", "a") as f:
-        json.dump(log_entry, f)
-        f.write("\n")
-    
-    # Also write a simple summary to a human-readable log
-    summary = f"[{log_entry['timestamp']}] {tool_name}: {file_path} by {log_entry['user']}"
-    with open(log_dir / "file-changes-summary.log", "a") as f:
-        f.write(summary + "\n")
-    
-    sys.exit(0)
+    // Always exit successfully to not block operations
+    process.exit(0);
+}
 
-if __name__ == "__main__":
-    main()
+if (require.main === module) {
+    main();
+}
 </file>
 
-<file path="scripts/validate_bash_command.py">
-#!/usr/bin/env python3
-"""
-Validate bash commands and provide feedback to Claude Code.
-Can block dangerous commands and suggest improvements.
-"""
+<file path="scripts/log_full_data.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Log complete tool data structures for debugging and exploration.
+ * Shows all available fields in hook inputs.
+ */
 
-import json
-import re
-import sys
+import * as fs from 'fs';
+import * as path from 'path';
 
-# Define validation rules as (regex pattern, message, is_dangerous) tuples
-VALIDATION_RULES = [
-    # Performance suggestions
-    (r"\bgrep\b(?!.*\|)", "Use 'rg' (ripgrep) instead of 'grep' for better performance and features", False),
-    (r"\bfind\s+\S+\s+-name\b", "Use 'rg --files | rg pattern' or 'rg --files -g pattern' instead of 'find -name' for better performance", False),
-    (r"\bcat\s+.*\|\s*grep\b", "Use 'rg pattern file' instead of 'cat file | grep pattern'", False),
+function main(): void {
+    // Ensure logs directory exists
+    const logDir = "logs";
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
     
-    # Security warnings
-    (r"\brm\s+-rf\s+/(?:\s|$)", "DANGER: Attempting to remove root directory!", True),
-    (r"\brm\s+-rf\s+~(?:/|$|\s)", "DANGER: Attempting to remove home directory!", True),
-    (r"\bdd\s+.*of=/dev/[sh]d[a-z](?:\d|$)", "DANGER: Direct disk write operation detected!", True),
-    (r">\s*/dev/[sh]d[a-z]", "DANGER: Attempting to write directly to disk device!", True),
+    // Read raw input
+    const rawInput = fs.readFileSync(0, 'utf8');
     
-    # Insecure practices
-    (r"\bcurl\s+.*\s+-k\b", "Security Warning: -k flag disables SSL certificate verification", False),
-    (r"\bwget\s+.*--no-check-certificate\b", "Security Warning: --no-check-certificate disables SSL verification", False),
-    (r"\bchmod\s+777\b", "Security Warning: chmod 777 gives full permissions to everyone", False),
-    (r"\bsudo\s+chmod\s+-R\s+777\b", "DANGER: Recursive chmod 777 is extremely insecure!", True),
-    
-    # Best practices
-    (r"cd\s+&&\s+ls", "Consider using 'ls <directory>' instead of 'cd && ls'", False),
-    (r"\|\s*wc\s+-l\b", "Consider using 'rg -c' for counting matches in files", False),
-]
-
-def validate_command(command: str) -> tuple[list[str], bool]:
-    """
-    Validate a command and return (issues, should_block).
-    """
-    issues = []
-    should_block = False
-    
-    for pattern, message, is_dangerous in VALIDATION_RULES:
-        if re.search(pattern, command, re.IGNORECASE):
-            issues.append(message)
-            if is_dangerous:
-                should_block = True
-    
-    return issues, should_block
-
-def main():
-    try:
-        # Read input from stdin
-        input_data = json.load(sys.stdin)
-    except json.JSONDecodeError:
-        # If JSON parsing fails, exit silently
-        sys.exit(0)
-    
-    # Check if this is a Bash tool call
-    tool_name = input_data.get("tool_name", "")
-    if tool_name != "Bash":
-        sys.exit(0)
-    
-    # Get the command
-    command = input_data.get("tool_input", {}).get("command", "")
-    if not command:
-        sys.exit(0)
-    
-    # Validate the command
-    issues, should_block = validate_command(command)
-    
-    if issues:
-        # Output issues to stderr (will be shown to Claude)
-        for message in issues:
-            print(f"• {message}", file=sys.stderr)
+    try {
+        // Parse JSON
+        const hookInput = JSON.parse(rawInput);
         
-        # Exit code 2 blocks the command
-        if should_block:
-            sys.exit(2)
+        // Determine hook type from command line args
+        const hookType = process.argv.length > 2 ? process.argv[2] : "unknown";
+        
+        // Create detailed log entry
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            hook_type: hookType,
+            raw_input_length: rawInput.length,
+            parsed_data: hookInput
+        };
+        
+        // Write to detailed log file
+        const logFile = path.join(logDir, "tool-data-structures.jsonl");
+        fs.appendFileSync(logFile, JSON.stringify(logEntry, null, 2) + "\n");
+        
+        // Also write a pretty-printed version for easier reading
+        const prettyFile = path.join(logDir, `tool-data-${hookType}.json`);
+        fs.writeFileSync(prettyFile, JSON.stringify(hookInput, null, 2));
+        
+        // Create a human-readable summary
+        const summaryFile = path.join(logDir, "tool-data-summary.log");
+        const summaryLines = [
+            `\n${'='.repeat(60)}`,
+            `Timestamp: ${new Date()}`,
+            `Hook Type: ${hookType}`,
+            `Tool Name: ${hookInput.tool_name || 'N/A'}`,
+            `Session ID: ${hookInput.session_id || 'N/A'}`,
+            `Available Keys: ${Object.keys(hookInput).join(', ')}`
+        ];
+        
+        // Show tool_input structure
+        if (hookInput.tool_input) {
+            summaryLines.push(`Tool Input Keys: ${Object.keys(hookInput.tool_input).join(', ')}`);
+        }
+        
+        // Show tool_response structure (for post hooks)
+        if (hookInput.tool_response) {
+            summaryLines.push(`Tool Response Keys: ${Object.keys(hookInput.tool_response).join(', ')}`);
+        }
+        
+        summaryLines.push('='.repeat(60));
+        fs.appendFileSync(summaryFile, summaryLines.join('\n') + '\n');
+        
+    } catch (e: any) {
+        // Log error
+        const errorEntry = {
+            timestamp: new Date().toISOString(),
+            error: e.message,
+            raw_input: rawInput.slice(0, 1000)  // First 1000 chars
+        };
+        
+        const errorFile = path.join(logDir, "tool-data-errors.jsonl");
+        fs.appendFileSync(errorFile, JSON.stringify(errorEntry) + "\n");
+    }
     
-    # Exit code 0 allows the command to proceed
-    sys.exit(0)
+    // Always exit successfully
+    process.exit(0);
+}
 
-if __name__ == "__main__":
-    main()
+if (require.main === module) {
+    main();
+}
+</file>
+
+<file path="scripts/log_tool_use.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Universal tool use logger for Claude Code hooks.
+ * Logs all tool usage to a structured JSON format.
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+function main(): void {
+    // Ensure logs directory exists
+    const logDir = "logs";
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+    
+    // Read hook input from stdin
+    let hookInput: any;
+    try {
+        const input = fs.readFileSync(0, 'utf8');
+        hookInput = JSON.parse(input);
+    } catch (e: any) {
+        // Log error and exit gracefully
+        const errorLog = path.join(logDir, "hook-errors.log");
+        fs.appendFileSync(errorLog, `[${new Date().toISOString()}] JSON decode error in log_tool_use.ts: ${e.message}\n`);
+        process.exit(0);
+    }
+    
+    // Determine if this is pre or post hook
+    const hookType = process.argv.length > 2 ? process.argv[2] : "unknown";
+    
+    // Create log entry
+    const logEntry: any = {
+        timestamp: new Date().toISOString(),
+        hook_type: hookType,
+        session_id: hookInput.session_id,
+        tool_name: hookInput.tool_name,
+        transcript_path: hookInput.transcript_path
+    };
+    
+    // Add tool-specific information
+    if (hookType === "pre") {
+        logEntry.tool_input = hookInput.tool_input || {};
+    } else if (hookType === "post") {
+        logEntry.tool_input = hookInput.tool_input || {};
+        logEntry.tool_response = hookInput.tool_response || {};
+    }
+    
+    // Write to log file
+    const logFile = path.join(logDir, "tool-usage.jsonl");
+    fs.appendFileSync(logFile, JSON.stringify(logEntry) + "\n");
+    
+    // Success - no output means continue
+    process.exit(0);
+}
+
+if (require.main === module) {
+    main();
+}
+</file>
+
+<file path="scripts/session_summary.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Generate session summary when Claude Code stops.
+ * Can optionally block stop if tasks are incomplete.
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface SessionStats {
+    total_tools: number;
+    tool_counts: { [key: string]: number };
+    file_reads: string[];
+    file_writes: string[];
+    bash_commands: string[];
+    errors: number;
+}
+
+function analyzeSession(sessionId: string): SessionStats {
+    const stats: SessionStats = {
+        total_tools: 0,
+        tool_counts: {},
+        file_reads: [],
+        file_writes: [],
+        bash_commands: [],
+        errors: 0
+    };
+    
+    // Read tool usage log if it exists
+    const toolLog = "logs/tool-usage.jsonl";
+    if (fs.existsSync(toolLog)) {
+        const lines = fs.readFileSync(toolLog, 'utf8').split('\n').filter(line => line.trim());
+        for (const line of lines) {
+            try {
+                const entry = JSON.parse(line);
+                if (entry.session_id === sessionId) {
+                    stats.total_tools += 1;
+                    const toolName = entry.tool_name || "unknown";
+                    stats.tool_counts[toolName] = (stats.tool_counts[toolName] || 0) + 1;
+                    
+                    // Track specific operations
+                    if (toolName === "Read") {
+                        const filePath = entry.tool_input?.file_path;
+                        if (filePath) {
+                            stats.file_reads.push(filePath);
+                        }
+                    } else if (["Write", "Edit", "MultiEdit"].includes(toolName)) {
+                        const filePath = entry.tool_input?.file_path;
+                        if (filePath) {
+                            stats.file_writes.push(filePath);
+                        }
+                    } else if (toolName === "Bash") {
+                        const command = entry.tool_input?.command;
+                        if (command) {
+                            stats.bash_commands.push(command);
+                        }
+                    }
+                    
+                    // Check for errors in post hooks
+                    if (entry.hook_type === "post") {
+                        const response = entry.tool_response || {};
+                        if (!response.success || (response.exit_code && response.exit_code !== 0)) {
+                            stats.errors += 1;
+                        }
+                    }
+                }
+            } catch {
+                // Skip invalid lines
+            }
+        }
+    }
+    
+    return stats;
+}
+
+function checkIncompleteTodos(sessionId: string): any[] {
+    // This is a placeholder - in a real implementation, you might
+    // read the TodoRead output from the transcript
+    return [];
+}
+
+function main(): void {
+    let hookInput: any;
+    try {
+        const input = fs.readFileSync(0, 'utf8');
+        hookInput = JSON.parse(input);
+    } catch {
+        process.exit(0);
+    }
+    
+    const sessionId = hookInput.session_id || "unknown";
+    const transcriptPath = hookInput.transcript_path || "";
+    const stopHookActive = hookInput.stop_hook_active || false;
+    
+    // Don't create infinite loops
+    if (stopHookActive) {
+        process.exit(0);
+    }
+    
+    // Analyze the session
+    const stats = analyzeSession(sessionId);
+    
+    // Generate summary
+    let summary = `
+=== Session Summary ===
+Session ID: ${sessionId}
+End Time: ${new Date().toLocaleString()}
+Total Tool Calls: ${stats.total_tools}
+Tool Usage:
+`;
+    
+    // Sort tool counts by frequency
+    const sortedTools = Object.entries(stats.tool_counts)
+        .sort(([,a], [,b]) => b - a);
+    
+    for (const [tool, count] of sortedTools) {
+        summary += `  - ${tool}: ${count}\n`;
+    }
+    
+    summary += `
+Files Read: ${stats.file_reads.length}
+Files Modified: ${stats.file_writes.length}
+Bash Commands: ${stats.bash_commands.length}
+Errors Encountered: ${stats.errors}
+Transcript: ${transcriptPath}
+=====================
+`;
+    
+    // Write summary to log
+    fs.appendFileSync("logs/session-summaries.txt", summary);
+    
+    // Also create a JSON summary for programmatic access
+    const jsonSummary = {
+        session_id: sessionId,
+        end_time: new Date().toISOString(),
+        stats: {
+            total_tools: stats.total_tools,
+            tool_counts: stats.tool_counts,
+            files_read: stats.file_reads.length,
+            files_modified: stats.file_writes.length,
+            bash_commands: stats.bash_commands.length,
+            errors: stats.errors
+        },
+        transcript_path: transcriptPath
+    };
+    
+    fs.appendFileSync("logs/session-summaries.jsonl", JSON.stringify(jsonSummary) + "\n");
+    
+    // Example: Block stop if there are errors (commented out)
+    // if (stats.errors > 0) {
+    //     const output = {
+    //         decision: "block",
+    //         reason: `Session had ${stats.errors} errors. Please review before ending.`
+    //     };
+    //     console.log(JSON.stringify(output));
+    //     process.exit(0);
+    // }
+    
+    // Example: Check for incomplete todos (commented out)
+    // const incomplete = checkIncompleteTodos(sessionId);
+    // if (incomplete.length > 0) {
+    //     const output = {
+    //         decision: "block",
+    //         reason: `You have ${incomplete.length} incomplete todos. Complete them?`
+    //     };
+    //     console.log(JSON.stringify(output));
+    //     process.exit(0);
+    // }
+    
+    process.exit(0);
+}
+
+if (require.main === module) {
+    main();
+}
+</file>
+
+<file path="scripts/track_file_changes.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Track file changes for audit purposes.
+ * Creates a detailed log of all file modifications.
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface FileInfo {
+    exists: boolean;
+    size?: number;
+    mode?: string;
+    is_dir?: boolean;
+    is_file?: boolean;
+}
+
+function getFileInfo(filePath: string): FileInfo {
+    try {
+        if (fs.existsSync(filePath)) {
+            const stats = fs.statSync(filePath);
+            return {
+                exists: true,
+                size: stats.size,
+                mode: '0' + (stats.mode & parseInt('777', 8)).toString(8),
+                is_dir: stats.isDirectory(),
+                is_file: stats.isFile(),
+            };
+        }
+    } catch {
+        // Ignore errors
+    }
+    return { exists: false };
+}
+
+function main(): void {
+    let hookInput: any;
+    try {
+        const input = fs.readFileSync(0, 'utf8');
+        hookInput = JSON.parse(input);
+    } catch {
+        process.exit(0);
+    }
+    
+    const toolName = hookInput.tool_name || "";
+    if (!["Write", "Edit", "MultiEdit", "NotebookEdit"].includes(toolName)) {
+        process.exit(0);
+    }
+    
+    // Ensure logs directory exists
+    const logDir = "logs";
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+    
+    // Extract file path
+    const toolInput = hookInput.tool_input || {};
+    const filePath = toolInput.file_path || toolInput.notebook_path || "unknown";
+    
+    // Create detailed log entry
+    const logEntry: any = {
+        timestamp: new Date().toISOString(),
+        tool: toolName,
+        file: filePath,
+        session_id: hookInput.session_id,
+        file_info: getFileInfo(filePath),
+        user: process.env.USER || "unknown",
+        cwd: process.cwd(),
+    };
+    
+    // Add operation-specific details
+    if (toolName === "Write") {
+        logEntry.operation = "create_or_overwrite";
+        logEntry.content_length = (toolInput.content || "").length;
+    } else if (toolName === "Edit") {
+        logEntry.operation = "edit";
+        logEntry.old_string_length = (toolInput.old_string || "").length;
+        logEntry.new_string_length = (toolInput.new_string || "").length;
+        logEntry.replace_all = toolInput.replace_all || false;
+    } else if (toolName === "MultiEdit") {
+        logEntry.operation = "multi_edit";
+        logEntry.edit_count = (toolInput.edits || []).length;
+    }
+    
+    // Write to audit log
+    const auditFile = path.join(logDir, "file-changes-audit.jsonl");
+    fs.appendFileSync(auditFile, JSON.stringify(logEntry) + "\n");
+    
+    // Also write a simple summary to a human-readable log
+    const summary = `[${logEntry.timestamp}] ${toolName}: ${filePath} by ${logEntry.user}`;
+    const summaryFile = path.join(logDir, "file-changes-summary.log");
+    fs.appendFileSync(summaryFile, summary + "\n");
+    
+    process.exit(0);
+}
+
+if (require.main === module) {
+    main();
+}
+</file>
+
+<file path="scripts/validate_bash_command.ts">
+#!/usr/bin/env npx ts-node
+/**
+ * Validate bash commands and provide feedback to Claude Code.
+ * Can block dangerous commands and suggest improvements.
+ */
+
+import * as fs from 'fs';
+
+// Define validation rules as [regex pattern, message, is_dangerous] tuples
+const VALIDATION_RULES: [RegExp, string, boolean][] = [
+    // Performance suggestions
+    [/\bgrep\b(?!.*\|)/, "Use 'rg' (ripgrep) instead of 'grep' for better performance and features", false],
+    [/\bfind\s+\S+\s+-name\b/, "Use 'rg --files | rg pattern' or 'rg --files -g pattern' instead of 'find -name' for better performance", false],
+    [/\bcat\s+.*\|\s*grep\b/, "Use 'rg pattern file' instead of 'cat file | grep pattern'", false],
+    
+    // Security warnings
+    [/\brm\s+-rf\s+\/(?:\s|$)/, "DANGER: Attempting to remove root directory!", true],
+    [/\brm\s+-rf\s+~(?:\/|$|\s)/, "DANGER: Attempting to remove home directory!", true],
+    [/\bdd\s+.*of=\/dev\/[sh]d[a-z](?:\d|$)/, "DANGER: Direct disk write operation detected!", true],
+    [/>\s*\/dev\/[sh]d[a-z]/, "DANGER: Attempting to write directly to disk device!", true],
+    
+    // Insecure practices
+    [/\bcurl\s+.*\s+-k\b/, "Security Warning: -k flag disables SSL certificate verification", false],
+    [/\bwget\s+.*--no-check-certificate\b/, "Security Warning: --no-check-certificate disables SSL verification", false],
+    [/\bchmod\s+777\b/, "Security Warning: chmod 777 gives full permissions to everyone", false],
+    [/\bsudo\s+chmod\s+-R\s+777\b/, "DANGER: Recursive chmod 777 is extremely insecure!", true],
+    
+    // Best practices
+    [/cd\s+&&\s+ls/, "Consider using 'ls <directory>' instead of 'cd && ls'", false],
+    [/\|\s*wc\s+-l\b/, "Consider using 'rg -c' for counting matches in files", false],
+];
+
+function validateCommand(command: string): [string[], boolean] {
+    const issues: string[] = [];
+    let shouldBlock = false;
+    
+    for (const [pattern, message, isDangerous] of VALIDATION_RULES) {
+        if (pattern.test(command)) {
+            issues.push(message);
+            if (isDangerous) {
+                shouldBlock = true;
+            }
+        }
+    }
+    
+    return [issues, shouldBlock];
+}
+
+function main(): void {
+    let inputData: any;
+    try {
+        const input = fs.readFileSync(0, 'utf8');
+        inputData = JSON.parse(input);
+    } catch {
+        // If JSON parsing fails, exit silently
+        process.exit(0);
+    }
+    
+    // Check if this is a Bash tool call
+    const toolName = inputData.tool_name || "";
+    if (toolName !== "Bash") {
+        process.exit(0);
+    }
+    
+    // Get the command
+    const command = inputData.tool_input?.command || "";
+    if (!command) {
+        process.exit(0);
+    }
+    
+    // Validate the command
+    const [issues, shouldBlock] = validateCommand(command);
+    
+    if (issues.length > 0) {
+        // Output issues to stderr (will be shown to Claude)
+        for (const message of issues) {
+            console.error(`• ${message}`);
+        }
+        
+        // Exit code 2 blocks the command
+        if (shouldBlock) {
+            process.exit(2);
+        }
+    }
+    
+    // Exit code 0 allows the command to proceed
+    process.exit(0);
+}
+
+if (require.main === module) {
+    main();
+}
 </file>
 
 <file path=".gitignore">
@@ -2229,7 +2313,7 @@ These hooks are actively:
 ## Important Behaviors
 
 ### Command Validation
-- Commands like `rm -rf /` will be BLOCKED by `validate_bash_command.py`
+- Commands like `rm -rf /` will be BLOCKED by `validate_bash_command.ts`
 - You'll see validation errors that explain why commands are dangerous
 - The hook uses exit code 2 to block execution
 
@@ -2277,7 +2361,7 @@ cat logs/tool-usage.jsonl | jq -r .tool_name | sort | uniq -c
 ### Debugging Hook Issues
 If hooks aren't working:
 1. Check script permissions: `ls -la scripts/`
-2. Test scripts manually: `echo '{}' | python3 scripts/log_tool_use.py pre`
+2. Test scripts manually: `echo '{}' | npx ts-node scripts/log_tool_use.ts pre`
 3. Check for JSON errors: `jq . .claude/settings*.json`
 
 ## Hook Data Available
@@ -2334,7 +2418,7 @@ tail logs/session-summaries.txt
 **If you see "command blocked by hook":**
 - Check the error message for details
 - The command may be dangerous
-- Review `scripts/validate_bash_command.py` for rules
+- Review `scripts/validate_bash_command.ts` for rules
 
 **If logs aren't being created:**
 - Ensure `logs/` directory exists
@@ -2516,7 +2600,7 @@ This dumps the raw JSON for every tool call - perfect for exploring what data is
 }
 ```
 
-### 2. Security Validation (Python)
+### 2. Security Validation (TypeScript)
 ```json
 {
   "hooks": {
@@ -2524,7 +2608,7 @@ This dumps the raw JSON for every tool call - perfect for exploring what data is
       "matcher": "Bash",
       "hooks": [{
         "type": "command",
-        "command": "python3 scripts/validate_bash.py"
+        "command": "npx ts-node scripts/validate_bash.ts"
       }]
     }]
   }
@@ -2608,11 +2692,11 @@ Hooks are configured in:
 
 | Script                     | Purpose                  | Hook Type       |
 | -------------------------- | ------------------------ | --------------- |
-| `validate_bash_command.py` | Block dangerous commands | PreToolUse      |
-| `log_tool_use.py`          | Log all tool usage       | Pre/PostToolUse |
-| `track_file_changes.py`    | Audit file modifications | PreToolUse      |
+| `validate_bash_command.ts` | Block dangerous commands | PreToolUse      |
+| `log_tool_use.ts`          | Log all tool usage       | Pre/PostToolUse |
+| `track_file_changes.ts`    | Audit file modifications | PreToolUse      |
 | `format_code.sh`           | Run formatters           | PostToolUse     |
-| `session_summary.py`       | Generate analytics       | Stop            |
+| `session_summary.ts`       | Generate analytics       | Stop            |
 
 ### Example Configurations
 
@@ -2640,10 +2724,11 @@ tail -f logs/tool-data-summary.log
 ```
 
 ### Block Dangerous Operations
-```python
-if "production" in file_path:
-    print("Cannot modify production files!", file=sys.stderr)
-    sys.exit(2)
+```typescript
+if (file_path.includes("production")) {
+    console.error("Cannot modify production files!");
+    process.exit(2);
+}
 ```
 
 ### Conditional Formatting
