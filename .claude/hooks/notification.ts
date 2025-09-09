@@ -4,7 +4,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { config } from 'dotenv';
-import { NotificationData, NotificationLog, TTSProvider, TTSRequest, HookExitCode } from './types';
+import { NotificationData, NotificationLog, TTSProvider, TTSRequest, HookExitCode } from './types/index.js';
 
 config();
 

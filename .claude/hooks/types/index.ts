@@ -212,25 +212,25 @@ export type HookHandler<T extends HookInputData = HookInputData> = (
 
 // Export type guards
 export function isNotificationData(data: any): data is NotificationData {
-    return data && 
+    return data != null && 
            typeof data.message === 'string' && 
            ['info', 'warning', 'error', 'success'].includes(data.type);
 }
 
 export function isUserPromptSubmitData(data: any): data is UserPromptSubmitData {
-    return data && 
+    return data != null && 
            typeof data.session_id === 'string' && 
            typeof data.prompt === 'string';
 }
 
 export function isToolUseData(data: any): data is ToolUseData {
-    return data && 
+    return data != null && 
            typeof data.session_id === 'string' && 
            typeof data.tool_name === 'string';
 }
 
 export function isValidationResult(result: any): result is ValidationResult {
-    return result && 
+    return result != null && 
            typeof result.isValid === 'boolean' &&
            (result.reason === undefined || typeof result.reason === 'string');
 }

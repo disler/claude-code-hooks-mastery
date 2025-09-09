@@ -5,7 +5,7 @@ import {
   isValidationResult,
   HookError,
   ValidationError,
-  TTSError
+  TTSError,
 } from '../../.claude/hooks/types';
 
 describe('Type Guards', () => {
@@ -14,7 +14,7 @@ describe('Type Guards', () => {
       const data = {
         message: 'Test message',
         type: 'info',
-        session_id: 'test-session'
+        session_id: 'test-session',
       };
       expect(isNotificationData(data)).toBe(true);
     });
@@ -25,10 +25,10 @@ describe('Type Guards', () => {
         { type: 'info' },
         { message: 123, type: 'info' },
         null,
-        undefined
+        undefined,
       ];
-      
-      invalidData.forEach(data => {
+
+      invalidData.forEach((data) => {
         expect(isNotificationData(data)).toBe(false);
       });
     });
@@ -38,7 +38,7 @@ describe('Type Guards', () => {
     it('should return true for valid prompt data', () => {
       const data = {
         session_id: 'test-session',
-        prompt: 'Test prompt'
+        prompt: 'Test prompt',
       };
       expect(isUserPromptSubmitData(data)).toBe(true);
     });
@@ -55,7 +55,7 @@ describe('Type Guards', () => {
       const data = {
         session_id: 'test-session',
         tool_name: 'TestTool',
-        parameters: { key: 'value' }
+        parameters: { key: 'value' },
       };
       expect(isToolUseData(data)).toBe(true);
     });
@@ -63,7 +63,7 @@ describe('Type Guards', () => {
     it('should return true even without parameters', () => {
       const data = {
         session_id: 'test-session',
-        tool_name: 'TestTool'
+        tool_name: 'TestTool',
       };
       expect(isToolUseData(data)).toBe(true);
     });
@@ -73,10 +73,12 @@ describe('Type Guards', () => {
     it('should return true for valid validation results', () => {
       expect(isValidationResult({ isValid: true })).toBe(true);
       expect(isValidationResult({ isValid: false, reason: 'Error' })).toBe(true);
-      expect(isValidationResult({ 
-        isValid: true, 
-        suggestions: ['Fix this', 'Try that'] 
-      })).toBe(true);
+      expect(
+        isValidationResult({
+          isValid: true,
+          suggestions: ['Fix this', 'Try that'],
+        })
+      ).toBe(true);
     });
 
     it('should return false for invalid validation results', () => {
