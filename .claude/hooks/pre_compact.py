@@ -42,7 +42,7 @@ def log_pre_compact(input_data):
     
     # Write back to file with formatting
     with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
 
 
 def backup_transcript(transcript_path, trigger):
