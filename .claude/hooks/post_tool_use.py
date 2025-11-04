@@ -33,7 +33,7 @@ def main():
         
         # Write back to file with formatting
         with open(log_path, 'w') as f:
-            json.dump(log_data, f, indent=2)
+            json.dump(log_data, f, ensure_ascii=False, indent=2)
         
         sys.exit(0)
         

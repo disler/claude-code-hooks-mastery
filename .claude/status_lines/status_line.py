@@ -49,7 +49,7 @@ def log_status_line(input_data, status_line_output):
     
     # Write back to file with formatting
     with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
 
 
 def get_git_branch():

@@ -113,7 +113,7 @@ def main():
         
         # Write back to file with formatting
         with open(log_file, 'w') as f:
-            json.dump(log_data, f, indent=2)
+            json.dump(log_data, f, ensure_ascii=False, indent=2)
         
         # Announce notification via TTS only if --notify flag is set
         # Skip TTS for the generic "Claude is waiting for your input" message

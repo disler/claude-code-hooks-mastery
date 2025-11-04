@@ -43,7 +43,7 @@ def log_session_start(input_data):
     
     # Write back to file with formatting
     with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
 
 
 def get_git_status():

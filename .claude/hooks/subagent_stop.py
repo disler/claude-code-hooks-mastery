@@ -111,7 +111,7 @@ def main():
         
         # Write back to file with formatting
         with open(log_path, 'w') as f:
-            json.dump(log_data, f, indent=2)
+            json.dump(log_data, f, ensure_ascii=False, indent=2)
         
         # Handle --chat switch (same as stop.py)
         if args.chat and 'transcript_path' in input_data:
@@ -132,7 +132,7 @@ def main():
                     # Write to logs/chat.json
                     chat_file = os.path.join(log_dir, 'chat.json')
                     with open(chat_file, 'w') as f:
-                        json.dump(chat_data, f, indent=2)
+                        json.dump(chat_data, f, ensure_ascii=False, indent=2)
                 except Exception:
                     pass  # Fail silently
 

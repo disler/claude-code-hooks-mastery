@@ -42,7 +42,7 @@ def log_user_prompt(session_id, input_data):
     
     # Write back to file with formatting
     with open(log_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        json.dump(log_data, f, ensure_ascii=False, indent=2)
 
 
 # Legacy function removed - now handled by manage_session_data
@@ -111,7 +111,7 @@ def manage_session_data(session_id, prompt, name_agent=False):
     # Save the updated session data
     try:
         with open(session_file, 'w') as f:
-            json.dump(session_data, f, indent=2)
+            json.dump(session_data, f, ensure_ascii=False, indent=2)
     except Exception:
         # Silently fail if we can't write the file
         pass
