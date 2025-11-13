@@ -18,7 +18,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "uv run .claude/status_lines/status_line.py",
+    "command": "uv run .claude/status_lines/status_line_v3.py",
     "padding": 0
   },
   "hooks": {
