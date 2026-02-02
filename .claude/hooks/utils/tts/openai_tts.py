@@ -27,9 +27,9 @@ async def main():
     - ./openai_tts.py "Your custom text" # Uses provided text
 
     Features:
-    - OpenAI gpt-4o-mini-tts model (latest)
+    - OpenAI tts-1-hd model (high quality)
     - Nova voice (engaging and warm)
-    - Streaming audio with instructions support
+    - Streaming audio playback
     - Live audio playback via LocalAudioPlayer
     """
 
@@ -64,17 +64,40 @@ async def main():
         print("🔊 Generating and streaming...")
 
         try:
-            # Generate and stream audio using OpenAI TTS
-            async with openai.audio.speech.with_streaming_response.create(
-                model="gpt-4o-mini-tts",
+            # Generate audio using OpenAI TTS (non-streaming first)
+            response = await openai.audio.speech.create(
+                model="tts-1-hd",
                 voice="nova",
                 input=text,
-                instructions="Speak in a cheerful, positive yet professional tone.",
                 response_format="mp3",
-            ) as response:
-                await LocalAudioPlayer().play(response)
-
-            print("✅ Playback complete!")
+            )
+            
+            # Save to temporary file and play
+            temp_file = Path("/tmp/tts_output.mp3")
+            with open(temp_file, "wb") as f:
+                f.write(response.content)
+            
+            print(f"🎵 Audio saved to: {temp_file}")
+            
+            # Play audio using system command (macOS)
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["afplay", str(temp_file)], 
+                    capture_output=True, 
+                    text=True
+                )
+                if result.returncode == 0:
+                    print("✅ Playback complete!")
+                else:
+                    print(f"⚠️  afplay failed: {result.stderr}")
+                    # Fallback to open command
+                    subprocess.run(["open", str(temp_file)])
+                    print("📂 Opened with system default player")
+            except Exception as player_error:
+                print(f"⚠️  System playback failed: {player_error}")
+                print(f"📁 Audio file saved at: {temp_file}")
+                print("You can play it manually with: open /tmp/tts_output.mp3")
 
         except Exception as e:
             print(f"❌ Error: {e}")
