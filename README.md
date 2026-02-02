@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/disler-claude-code-hooks-mastery-badge.png)](https://mseep.ai/app/disler-claude-code-hooks-mastery)
+
 # Claude Code Hooks Mastery
 
 [Claude Code Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) - Quickly master how to use Claude Code hooks to add deterministic (or non-deterministic) control over Claude Code's behavior. Plus learn about [Claude Code Sub-Agents](#claude-code-sub-agents), the powerful [Meta-Agent](#the-meta-agent), and [Team-Based Validation](#team-based-validation-system) with agent orchestration.
