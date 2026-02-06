@@ -174,6 +174,7 @@ def main():
                 print(message)
             else:
                 print("Error generating completion message")
+                sys.exit(1)
         elif sys.argv[1] == "--agent-name":
             # Generate agent name (no input needed)
             name = generate_agent_name()
@@ -185,6 +186,7 @@ def main():
                 print(response)
             else:
                 print("Error calling OpenAI API")
+                sys.exit(1)
     else:
         print("Usage: ./oai.py 'your prompt here' or ./oai.py --completion or ./oai.py --agent-name")
 
