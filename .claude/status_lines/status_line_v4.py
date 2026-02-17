@@ -7,11 +7,16 @@
 # ///
 
 import json
-import os
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+try:
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 try:
     from dotenv import load_dotenv
 
@@ -104,7 +109,7 @@ def format_extras(extras):
     """Format extras dictionary into a compact string."""
     if not extras:
         return None
-    
+
     # Format each key-value pair
     pairs = []
     for key, value in extras.items():
@@ -113,7 +118,7 @@ def format_extras(extras):
         if len(str_value) > 20:
             str_value = str_value[:17] + "..."
         pairs.append(f"{key}:{str_value}")
-    
+
     return " ".join(pairs)
 
 
