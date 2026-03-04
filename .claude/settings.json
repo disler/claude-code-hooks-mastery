@@ -163,6 +163,57 @@
           }
         ]
       }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/teammate_idle.py --log-only"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/task_completed.py --log-only"
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/config_change.py --log-only"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/worktree_create.py"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/worktree_remove.py"
+          }
+        ]
+      }
     ]
   }
 }
