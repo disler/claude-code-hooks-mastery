@@ -133,8 +133,7 @@ def build_stop_message(input_data):
     cwd = input_data.get('cwd', '')
     project_name = Path(cwd).name if cwd else 'unknown'
 
-    # Get LLM-generated or fallback summary
-    summary = get_llm_completion_message()
+    summary = random.choice(get_completion_messages())
 
     return f"{summary} in {project_name}"
 
