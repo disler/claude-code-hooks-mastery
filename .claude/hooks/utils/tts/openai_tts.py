@@ -8,10 +8,11 @@
 # ]
 # ///
 
+import asyncio
 import os
 import sys
-import asyncio
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 
@@ -67,10 +68,11 @@ async def main():
             # Generate and stream audio using OpenAI TTS
             async with openai.audio.speech.with_streaming_response.create(
                 model="gpt-4o-mini-tts",
-                voice="nova",
+                voice="verse",
                 input=text,
-                instructions="Speak in a cheerful, positive yet professional tone.",
-                response_format="mp3",
+                instructions="Speak fast",
+                response_format="wav",
+                speed=1.5,
             ) as response:
                 await LocalAudioPlayer().play(response)
 

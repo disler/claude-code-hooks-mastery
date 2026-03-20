@@ -50,43 +50,84 @@ def get_tts_script_path():
     return None
 
 
-def announce_notification():
-    """Announce that the agent needs user input."""
+def build_notification_message(input_data):
+    """Build a concise notification message, ending with project directory."""
+    cwd = input_data.get('cwd', '')
+    project_name = Path(cwd).name if cwd else 'unknown'
+    notification_type = input_data.get('notification_type', '')
+    message = input_data.get('message', '')
+
+    # Build concise action description
+    if notification_type == 'permission_prompt':
+        # Extract tool name from messages like "Claude needs your permission to use Bash"
+        tool = message.split('to use ')[-1] if 'to use ' in message else 'a tool'
+        action = f"Claude needs permission for {tool}"
+    elif notification_type == 'idle_prompt':
+        action = "Claude is waiting for input"
+    elif notification_type == 'elicitation_dialog':
+        action = f"Claude has a question: {message}" if message else "Claude has a question"
+    elif message:
+        action = message
+    else:
+        action = "Claude needs your input"
+
+    # Optionally prepend engineer name (30% chance)
+    engineer_name = os.getenv('ENGINEER_NAME', '').strip()
+    if engineer_name and random.random() < 0.3:
+        action = f"{engineer_name}, {action[0].lower()}{action[1:]}"
+
+    return f"{action} in {project_name}"
+
+
+def send_desktop_notification(title, message):
+    """Send a desktop push notification via notify-send (Linux)."""
+    try:
+        subprocess.run(
+            ["notify-send", "--app-name=Claude Code", title, message],
+            capture_output=True,
+            timeout=5
+        )
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+
+def announce_tts(input_data):
+    """Announce via TTS."""
+    notification_message = build_notification_message(input_data)
+
     try:
         tts_script = get_tts_script_path()
-        if not tts_script:
-            return  # No TTS scripts available
-        
-        # Get engineer name if available
-        engineer_name = os.getenv('ENGINEER_NAME', '').strip()
-        
-        # Create notification message with 30% chance to include name
-        if engineer_name and random.random() < 0.3:
-            notification_message = f"{engineer_name}, your agent needs your input"
-        else:
-            notification_message = "Your agent needs your input"
-        
-        # Call the TTS script with the notification message
-        subprocess.run([
-            "uv", "run", tts_script, notification_message
-        ], 
-        capture_output=True,  # Suppress output
-        timeout=10  # 10-second timeout
-        )
-        
+        if tts_script:
+            subprocess.run([
+                "uv", "run", tts_script, notification_message
+            ],
+            capture_output=True,
+            timeout=10
+            )
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
-        # Fail silently if TTS encounters issues
         pass
     except Exception:
-        # Fail silently for any other errors
         pass
+
+
+def announce_desktop(input_data):
+    """Send a desktop push notification."""
+    notification_message = build_notification_message(input_data)
+    cwd = input_data.get('cwd', '')
+    title = f"Claude Code — {Path(cwd).name}" if cwd else "Claude Code"
+    send_desktop_notification(title, notification_message)
 
 
 def main():
     try:
         # Parse command line arguments
         parser = argparse.ArgumentParser()
-        parser.add_argument('--notify', action='store_true', help='Enable TTS notifications')
+        parser.add_argument(
+            '--notify',
+            choices=['tts', 'desktop', 'both', 'off'],
+            default='off',
+            help='Notification mode: tts (voice), desktop (notify-send), both, off (log only)'
+        )
         args = parser.parse_args()
         
         # Read JSON input from stdin
@@ -115,10 +156,16 @@ def main():
         with open(log_file, 'w') as f:
             json.dump(log_data, f, indent=2)
         
-        # Announce notification via TTS only if --notify flag is set
-        # Skip TTS for the generic "Claude is waiting for your input" message
-        if args.notify and input_data.get('message') != 'Claude is waiting for your input':
-            announce_notification()
+        # Send notification based on chosen mode
+        # Skip for the generic "Claude is waiting for your input" message
+        if args.notify != 'off' and input_data.get('message') != 'Claude is waiting for your input':
+            if args.notify == 'tts':
+                announce_tts(input_data)
+            elif args.notify == 'desktop':
+                announce_desktop(input_data)
+            elif args.notify == 'both':
+                announce_desktop(input_data)
+                announce_tts(input_data)
         
         sys.exit(0)
         
