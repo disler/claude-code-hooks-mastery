@@ -184,9 +184,11 @@ def main():
         parser.add_argument('--chat', action='store_true', help='Copy transcript to chat.json')
         parser.add_argument(
             '--notify',
-            choices=['tts', 'desktop', 'both', 'off'],
+            nargs='?',
+            const='tts',
             default='off',
-            help='Notification mode: tts (voice), desktop (notify-send), both, off (log only)'
+            choices=['tts', 'desktop', 'both', 'off'],
+            help='Notification mode: tts (voice, default if no value given), desktop (notify-send), both, off (log only)'
         )
         args = parser.parse_args()
         

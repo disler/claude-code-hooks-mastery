@@ -124,9 +124,11 @@ def main():
         parser = argparse.ArgumentParser()
         parser.add_argument(
             '--notify',
-            choices=['tts', 'desktop', 'both', 'off'],
+            nargs='?',
+            const='tts',
             default='off',
-            help='Notification mode: tts (voice), desktop (notify-send), both, off (log only)'
+            choices=['tts', 'desktop', 'both', 'off'],
+            help='Notification mode: tts (voice, default if no value given), desktop (notify-send), both, off (log only)'
         )
         args = parser.parse_args()
         

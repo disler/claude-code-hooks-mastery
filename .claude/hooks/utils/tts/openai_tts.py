@@ -70,7 +70,7 @@ async def main():
                 model="gpt-4o-mini-tts",
                 voice="verse",
                 input=text,
-                instructions="Speak fast",
+                instructions="Speak in a cheerful, positive yet professional tone.",
                 response_format="wav",
                 speed=1.5,
             ) as response:
