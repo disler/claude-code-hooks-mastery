@@ -128,30 +128,52 @@ def get_llm_completion_message():
     messages = get_completion_messages()
     return random.choice(messages)
 
-def announce_completion():
-    """Announce completion using the best available TTS service."""
+def build_stop_message(input_data):
+    """Build a concise completion message, ending with project directory."""
+    cwd = input_data.get('cwd', '')
+    project_name = Path(cwd).name if cwd else 'unknown'
+
+    summary = random.choice(get_completion_messages())
+
+    return f"{summary} in {project_name}"
+
+
+def send_desktop_notification(title, message):
+    """Send a desktop push notification via notify-send (Linux)."""
+    try:
+        subprocess.run(
+            ["notify-send", "--app-name=Claude Code", title, message],
+            capture_output=True,
+            timeout=5
+        )
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+
+def announce_tts(input_data):
+    """Announce completion via TTS."""
     try:
         tts_script = get_tts_script_path()
-        if not tts_script:
-            return  # No TTS scripts available
-        
-        # Get completion message (LLM-generated or fallback)
-        completion_message = get_llm_completion_message()
-        
-        # Call the TTS script with the completion message
-        subprocess.run([
-            "uv", "run", tts_script, completion_message
-        ], 
-        capture_output=True,  # Suppress output
-        timeout=10  # 10-second timeout
-        )
-        
+        if tts_script:
+            message = build_stop_message(input_data)
+            subprocess.run([
+                "uv", "run", tts_script, message
+            ],
+            capture_output=True,
+            timeout=10
+            )
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
-        # Fail silently if TTS encounters issues
         pass
     except Exception:
-        # Fail silently for any other errors
         pass
+
+
+def announce_desktop(input_data):
+    """Send a desktop push notification for completion."""
+    message = build_stop_message(input_data)
+    cwd = input_data.get('cwd', '')
+    title = f"Claude Code — {Path(cwd).name}" if cwd else "Claude Code"
+    send_desktop_notification(title, message)
 
 
 def main():
@@ -159,7 +181,14 @@ def main():
         # Parse command line arguments
         parser = argparse.ArgumentParser()
         parser.add_argument('--chat', action='store_true', help='Copy transcript to chat.json')
-        parser.add_argument('--notify', action='store_true', help='Enable TTS completion announcement')
+        parser.add_argument(
+            '--notify',
+            nargs='?',
+            const='tts',
+            default='off',
+            choices=['tts', 'desktop', 'both', 'off'],
+            help='Notification mode: tts (voice, default if no value given), desktop (notify-send), both, off (log only)'
+        )
         args = parser.parse_args()
         
         # Read JSON input from stdin
@@ -214,9 +243,15 @@ def main():
                 except Exception:
                     pass  # Fail silently
 
-        # Announce completion via TTS (only if --notify flag is set)
-        if args.notify:
-            announce_completion()
+        # Send notification based on chosen mode
+        if args.notify != 'off':
+            if args.notify == 'tts':
+                announce_tts(input_data)
+            elif args.notify == 'desktop':
+                announce_desktop(input_data)
+            elif args.notify == 'both':
+                announce_desktop(input_data)
+                announce_tts(input_data)
 
         sys.exit(0)
 
