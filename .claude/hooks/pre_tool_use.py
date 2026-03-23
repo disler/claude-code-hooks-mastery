@@ -8,6 +8,25 @@ import sys
 import re
 from pathlib import Path
 
+
+def is_destructive_db_command(command):
+    """Detect destructive database commands from common frameworks."""
+    normalized = command.lower().strip()
+    destructive_patterns = [
+        r"artisan\s+(migrate:fresh|migrate:reset|db:wipe)",
+        r"prisma\s+migrate\s+reset",
+        r"prisma\s+db\s+push\s+--force-reset",
+        r"manage\.py\s+(flush|sqlflush)",
+        r"rails?\s+db:(drop|reset)",
+        r"doctrine:(fixtures:load|schema:drop|database:drop)",
+        r"\bDROP\s+(DATABASE|TABLE)\b",
+        r"\bTRUNCATE\s+TABLE\b",
+        r"\bdropdb\b",
+    ]
+    for pattern in destructive_patterns:
+        if re.search(pattern, normalized):
+            return True
+    return False
 def is_dangerous_rm_command(command):
     """
     Comprehensive detection of dangerous rm commands.
@@ -103,6 +122,11 @@ def main():
             if is_dangerous_rm_command(command):
                 print("BLOCKED: Dangerous rm command detected and prevented", file=sys.stderr)
                 sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
+
+            if is_destructive_db_command(command):
+                print("BLOCKED: Destructive database command detected", file=sys.stderr)
+                print("Use safe alternatives: migrate (not migrate:fresh), deploy (not reset)", file=sys.stderr)
+                sys.exit(2)
         
         # Ensure log directory exists
         log_dir = Path.cwd() / 'logs'
