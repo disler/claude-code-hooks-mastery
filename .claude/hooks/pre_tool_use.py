@@ -4,6 +4,7 @@
 # ///
 
 import json
+import shlex
 import sys
 import re
 from pathlib import Path
@@ -11,44 +12,52 @@ from pathlib import Path
 def is_dangerous_rm_command(command):
     """
     Comprehensive detection of dangerous rm commands.
-    Matches various forms of rm -rf and similar destructive patterns.
+    Uses proper tokenization to avoid false positives from pathnames
+    containing flag-like substrings (e.g. soft-hold-enrollment matching -r).
     """
-    # Normalize command by removing extra spaces and converting to lowercase
-    normalized = ' '.join(command.lower().split())
-    
-    # Pattern 1: Standard rm -rf variations
-    patterns = [
-        r'\brm\s+.*-[a-z]*r[a-z]*f',  # rm -rf, rm -fr, rm -Rf, etc.
-        r'\brm\s+.*-[a-z]*f[a-z]*r',  # rm -fr variations
-        r'\brm\s+--recursive\s+--force',  # rm --recursive --force
-        r'\brm\s+--force\s+--recursive',  # rm --force --recursive
-        r'\brm\s+-r\s+.*-f',  # rm -r ... -f
-        r'\brm\s+-f\s+.*-r',  # rm -f ... -r
-    ]
-    
-    # Check for dangerous patterns
-    for pattern in patterns:
-        if re.search(pattern, normalized):
-            return True
-    
-    # Pattern 2: Check for rm with recursive flag targeting dangerous paths
-    dangerous_paths = [
-        r'/',           # Root directory
-        r'/\*',         # Root with wildcard
-        r'~',           # Home directory
-        r'~/',          # Home directory path
-        r'\$HOME',      # Home environment variable
-        r'\.\.',        # Parent directory references
-        r'\*',          # Wildcards in general rm -rf context
-        r'\.',          # Current directory
-        r'\.\s*$',      # Current directory at end of command
-    ]
-    
-    if re.search(r'\brm\s+.*-[a-z]*r', normalized):  # If rm has recursive flag
-        for path in dangerous_paths:
-            if re.search(path, normalized):
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        # Malformed command (unclosed quotes etc.) - let it through
+        return False
+
+    if not tokens or tokens[0] != 'rm':
+        return False
+
+    # Separate flags from path operands
+    flags = set()
+    paths = []
+    for token in tokens[1:]:
+        if token == '--':
+            # Everything after -- is a path operand
+            paths.extend(tokens[tokens.index('--') + 1:])
+            break
+        if token.startswith('--'):
+            flags.add(token)
+        elif token.startswith('-') and len(token) > 1:
+            # Short flags like -rf, -r, -f, -R
+            for ch in token[1:]:
+                flags.add(f'-{ch}')
+        else:
+            paths.append(token)
+
+    has_recursive = bool(flags & {'-r', '-R', '--recursive'})
+    has_force = bool(flags & {'-f', '--force'})
+
+    # Block rm -rf (recursive + force together)
+    if has_recursive and has_force:
+        return True
+
+    # Block rm -r targeting dangerous paths
+    if has_recursive:
+        dangerous = {'/', '/*', '~', '~/', '.', '..'}
+        for p in paths:
+            normalized_path = p.rstrip('/')
+            if p in dangerous or normalized_path in dangerous:
                 return True
-    
+            if '$HOME' in p:
+                return True
+
     return False
 
 def is_env_file_access(tool_name, tool_input):
