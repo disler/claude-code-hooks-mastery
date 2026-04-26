@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash
-description: Manage, organize and ships your codebase.
+description: "Demo: tests hook blocking of destructive rm -rf commands — not for production use"
 ---
 
 # Sentient
