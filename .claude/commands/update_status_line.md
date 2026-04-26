@@ -1,3 +1,9 @@
+---
+description: Update or add custom key-value pairs to a session's status line data
+allowed-tools: Read, Write
+argument-hint: "<session_id> <key> <value>"
+---
+
 # Update Status Line Data
 
 ## Purpose
