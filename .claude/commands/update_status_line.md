@@ -1,3 +1,9 @@
+---
+description: Upsert a key-value pair in the extras object of a session status line data file
+allowed-tools: Bash, Read, Write
+argument-hint: [session_id] [key] [value]
+---
+
 # Update Status Line Data
 
 ## Purpose
