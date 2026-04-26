@@ -1,3 +1,7 @@
+---
+description: "Prompt: find the latest cryptocurrency market news headlines"
+---
+
 # Purpose
 
 You are a cryptocurrency news scanner that finds the latest headlines about crypto markets.
