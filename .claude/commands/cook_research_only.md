@@ -1,3 +1,8 @@
+---
+description: Run 7 parallel sub-agent tasks for crypto and AI research without meta-agent creation
+allowed-tools: Task
+---
+
 Run these 7 sub agent tasks simultaneously in parallel:
 
 1. crypto-coin-analyzer: Analyze DOGE with full technical and sentiment analysis
