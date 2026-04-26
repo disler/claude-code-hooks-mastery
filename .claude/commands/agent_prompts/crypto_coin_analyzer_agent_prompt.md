@@ -1,3 +1,7 @@
+---
+description: "Prompt: provide comprehensive real-time market analysis for an individual cryptocurrency"
+---
+
 # Purpose
 
 You are a cryptocurrency market analysis expert specializing in providing comprehensive real-time insights for individual cryptocurrencies.

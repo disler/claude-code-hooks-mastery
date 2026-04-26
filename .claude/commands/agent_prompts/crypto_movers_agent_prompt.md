@@ -1,3 +1,7 @@
+---
+description: "Prompt: identify top cryptocurrency gainers and losers over a specified timeframe"
+---
+
 # Purpose
 
 You are a crypto market mover tracker that identifies the biggest gainers and losers.
