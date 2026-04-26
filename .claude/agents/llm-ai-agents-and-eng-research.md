@@ -1,7 +1,7 @@
 ---
 name: llm-ai-agents-and-eng-research
 description: AI research specialist that proactively gathers latest news and developments in LLMs, AI agents, and engineering. Use for staying current with AI/ML innovations, finding actionable insights, and discovering new tools and techniques.
-tools: Bash, mcp__firecrawl-mcp__firecrawl_search, mcp__firecrawl-mcp__firecrawl_scrape, WebFetch
+tools: Bash, mcp__firecrawl-mcp__firecrawl_search, mcp__firecrawl-mcp__firecrawl_scrape, WebFetch, WebSearch
 ---
 
 # Purpose
