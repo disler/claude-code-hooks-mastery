@@ -65,7 +65,7 @@ def get_tts_script_path():
 def get_llm_completion_message():
     """
     Generate completion message using available LLM services.
-    Priority order: OpenAI > Anthropic > Ollama > fallback to random message
+    Priority order: OpenAI > Anthropic > MiniMax > Ollama > fallback to random message
     
     Returns:
         str: Generated or fallback completion message
@@ -108,7 +108,24 @@ def get_llm_completion_message():
             except (subprocess.TimeoutExpired, subprocess.SubprocessError):
                 pass
     
-    # Try Ollama third (local LLM)
+    # Try MiniMax third
+    if os.getenv('MINIMAX_API_KEY'):
+        minimax_script = llm_dir / "minimax.py"
+        if minimax_script.exists():
+            try:
+                result = subprocess.run([
+                    "uv", "run", str(minimax_script), "--completion"
+                ], 
+                capture_output=True,
+                text=True,
+                timeout=10
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+                pass
+    
+    # Try Ollama fourth (local LLM)
     ollama_script = llm_dir / "ollama.py"
     if ollama_script.exists():
         try:
