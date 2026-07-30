@@ -121,7 +121,7 @@ flowchart TB
 ### 5. Stop Hook
 **Fires:** When Claude Code finishes responding  
 **Payload:** `stop_hook_active` boolean flag  
-**Enhanced:** AI-generated completion messages with TTS playback (LLM priority: OpenAI > Anthropic > Ollama > random)
+**Enhanced:** AI-generated completion messages with TTS playback (LLM priority: OpenAI > Anthropic > MiniMax > Ollama > random)
 
 ### 6. SubagentStop Hook
 **Fires:** When Claude Code subagents (Task tools) finish responding  
@@ -213,7 +213,7 @@ This approach ensures your hooks remain functional across different environments
   - `utils/` - Intelligent TTS and LLM utility scripts
     - `tts/` - Text-to-speech providers (ElevenLabs, OpenAI, pyttsx3)
       - `tts_queue.py` - Queue-based TTS management (prevents overlapping audio)
-    - `llm/` - Language model integrations (OpenAI, Anthropic, Ollama)
+    - `llm/` - Language model integrations (OpenAI, Anthropic, MiniMax, Ollama)
       - `task_summarizer.py` - LLM-powered task completion summaries
 - `.claude/status_lines/` - Real-time terminal status displays
   - `status_line.py` - Basic MVP with git info
