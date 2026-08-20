@@ -934,3 +934,7 @@ Set your preferred status line in `.claude/settings.json`:
 Learn tactical agentic coding patterns with [Tactical Agentic Coding](https://agenticengineer.com/tactical-agentic-coding?y=ssvhooks)
 
 Follow the [IndyDevDan YouTube channel](https://www.youtube.com/@indydevdan) to improve your agentic coding advantage.
+
+## Related
+
+- [awesome-claude-code-hooks](https://github.com/loqimean/awesome-claude-code-hooks) - a curated list of Claude Code hook implementations, guides, and tools
